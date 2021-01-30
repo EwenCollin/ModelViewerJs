@@ -1,0 +1,175 @@
+import * as THREE from '../../build/three.module.js';
+
+var Object = function(parent, mesh, filename, index, font, camera) {
+    var self = this;
+    self.parent = parent;
+    self.mesh = mesh;
+    self.filename = filename;
+    self.rescaled = false;
+    self.animationMixer;
+	self.index = index;
+	self.font = font;
+	self.camera = camera;
+	self.text;
+	self.selected = false;
+	self.boxHelper;
+	self.box;
+
+	self.getTransformGroup = function() {
+        if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
+		else var object = self.mesh;
+		return object;
+	}
+
+	self.generateText = function(text, size) {
+		const color = 0x990099;
+		var shape = self.font.generateShapes(text, size);
+		var geometry = new THREE.ShapeGeometry(shape);
+		geometry.computeBoundingBox();
+		const xMid = - 0.5 * ( geometry.boundingBox.max.x - geometry.boundingBox.min.x );
+		geometry.translate( xMid, 0, 0 );
+		return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial( {
+			color: color,
+			side: THREE.DoubleSide
+		} ));
+	}
+
+    self.init = function() {
+        if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
+        else var object = self.mesh;
+        console.log(object);
+		var objectsToRemove = [];
+		object.traverse( function ( child ) {
+			if ( child.isMesh ) {
+				child.castShadow = true;
+                child.receiveShadow = true;
+			}
+			else if (child.type !== "Group" && child.type !== "Object3D" && child.type !== "Bone"){
+				objectsToRemove.push(child);
+			}
+		} );
+		console.log(objectsToRemove);
+		for (var i = 0; i < objectsToRemove.length; i++) {
+			object.remove(objectsToRemove[i]);
+		}
+		self.parent.add(object);
+    }
+    self.init();
+
+    self.tick = function(dt) {
+        if (!self.rescaled) {
+            self.rescale();
+            self.rescaled = true;
+        }
+		if (self.animationMixer) self.animationMixer.update(dt);
+		self.text.rotation.copy(camera.rotation);
+		self.boxHelper.visible = self.selected;
+    }
+
+    self.rescale = function() {
+        if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
+        else var object = self.mesh;
+		if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) {
+            if (self.mesh.animations.length > 0) {
+				self.animationMixer = new THREE.AnimationMixer(self.mesh.scene);
+				for(var i = 0; i < self.mesh.animations.length; i++) {
+					const action = self.animationMixer.clipAction(self.mesh.animations[i]);
+					action.play();
+				}
+            }
+        } else{
+            if (object.animations.length > 0) {
+                self.animationMixer = new THREE.AnimationMixer(object);
+                const action = self.animationMixer.clipAction(object.animations[0]);
+                action.play();
+            }
+        }
+		object.updateMatrixWorld();
+		object.traverse( function ( child ) {
+			if ( child.isMesh ) {
+				child.material.metalness = child.material.metalness/2.5;
+				if (child.skeleton) {
+					child.updateMatrix();
+					child.updateMatrixWorld();
+					const helper = new THREE.SkeletonHelper(child.skeleton.bones[0]);
+					self.parent.add(helper);
+				}
+			}
+		});
+		
+		const box = new THREE.BoxHelper(object, 0xffff00);
+		var radius = box.geometry.boundingSphere.radius;
+		object.scale.multiplyScalar(120/radius);
+        object.position.set(self.index*200, 0, 0);
+		object.updateMatrixWorld();
+		self.text = self.generateText(self.filename, object.worldToLocal(new THREE.Vector3(0, 20, 0)).y);
+		object.add(self.text);
+		self.text.rotation.y = Math.PI/2;
+		self.text.position.y = object.worldToLocal(new THREE.Vector3(0, 110, 0)).y;
+		self.text.renderOrder = 1;
+		self.text.material.depthTest = false;
+
+		box.update();
+		box.geometry.computeBoundingBox();
+		const boxRaycast = new THREE.Mesh(self.makeBoxBufferGeometry(new THREE.Vector3(box.geometry.attributes.position.array[0], box.geometry.attributes.position.array[1], box.geometry.attributes.position.array[2]), new THREE.Vector3(box.geometry.attributes.position.array[3], box.geometry.attributes.position.array[7], box.geometry.attributes.position.array[14])), new THREE.MeshBasicMaterial(0x00ffff));
+		boxRaycast.layers.enable(1);
+		object.attach(boxRaycast);
+		object.attach(box);
+		console.log(box);
+		box.scale.multiplyScalar(radius/120);
+		box.position.copy(object.position);
+		self.boxHelper = box;
+		self.box = boxRaycast;
+		self.box.visible = false;
+		self.boxHelper.visible = false;
+	}
+	
+	self.makeBoxBufferGeometry = function(from, to) {
+		const geometry = new THREE.Geometry();
+		geometry.vertices.push(
+		  new THREE.Vector3(from.x, from.y,  to.z),  // 0
+		  new THREE.Vector3( to.x, from.y,  to.z),  // 1
+		  new THREE.Vector3(from.x,  to.y,  to.z),  // 2
+		  new THREE.Vector3( to.x,  to.y,  to.z),  // 3
+		  new THREE.Vector3(from.x, from.y, from.z),  // 4
+		  new THREE.Vector3( to.x, from.y, from.z),  // 5
+		  new THREE.Vector3(from.x, to.y, from.z),  // 6
+		  new THREE.Vector3( to.x,  to.y, from.z),  // 7
+		);
+	  
+		/*
+			 6----7
+			/|   /|
+		   2----3 |
+		   | |  | |
+		   | 4--|-5
+		   |/   |/
+		   0----1
+		*/
+	  
+		geometry.faces.push(
+		   // front
+		   new THREE.Face3(0, 3, 2),
+		   new THREE.Face3(0, 1, 3),
+		   // right
+		   new THREE.Face3(1, 7, 3),
+		   new THREE.Face3(1, 5, 7),
+		   // back
+		   new THREE.Face3(5, 6, 7),
+		   new THREE.Face3(5, 4, 6),
+		   // left
+		   new THREE.Face3(4, 2, 6),
+		   new THREE.Face3(4, 0, 2),
+		   // top
+		   new THREE.Face3(2, 7, 6),
+		   new THREE.Face3(2, 3, 7),
+		   // bottom
+		   new THREE.Face3(4, 1, 0),
+		   new THREE.Face3(4, 5, 1),
+		);
+		return new THREE.BufferGeometry().fromGeometry(geometry);
+	}
+
+}
+
+export {Object}
