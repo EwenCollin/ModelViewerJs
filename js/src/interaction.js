@@ -10,18 +10,25 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.scene = scene;
     self.selectedObject;
     self.transformControls = new TransformControls(self.camera, self.rendererDomElement);
+    self.boneControls = new TransformControls(self.camera, self.rendererDomElement);
+    self.boneControls.setMode("rotate");
+    self.boneControls.addEventListener('dragging-changed', function (event) {
+        self.controls.enabled = !event.value;
+    });
     self.transformControls.addEventListener('dragging-changed', function (event) {
         self.controls.enabled = !event.value;
     });
     self.scene.add(self.transformControls);
+    self.scene.add(self.boneControls);
     self.raycaster = new THREE.Raycaster();
 
-    self.tick = function() {
+    self.tick = function(dt) {
         for(var i = 0; i < self.objects.length; i++) {
             self.objects[i].selected = false;
         }
         if(self.selectedObject !== undefined) {
             self.selectedObject.selected = true;
+            self.selectedObject.tick(dt, self.boneControls);
             self.transformControls.attach(self.selectedObject.getTransformGroup());
         }
     }
@@ -57,8 +64,10 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
         if(rayResult.length > 0) {
             var selectedObject = rayResult[0].object;
             var fObject = self.retrieveSelectedObject(selectedObject);
-            if (fObject !== undefined) {
+            if (fObject !== undefined && self.selectedObject !== fObject) {
                 self.selectedObject = fObject;
+            } else{
+                self.selectedObject.select(mouse, self.rendererDomElement);
             }
         }
 

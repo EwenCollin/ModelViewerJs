@@ -1,4 +1,5 @@
 import * as THREE from '../../build/three.module.js';
+import { InteractiveSkeleton } from './InteractiveSkeleton.js';
 
 var Object = function(parent, mesh, filename, index, font, camera) {
     var self = this;
@@ -14,6 +15,8 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 	self.selected = false;
 	self.boxHelper;
 	self.box;
+	self.animations;
+	self.interactiveSkeleton;
 
 	self.getTransformGroup = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
@@ -22,7 +25,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 	}
 
 	self.generateText = function(text, size) {
-		const color = 0x990099;
+		const color = 0xBB00BB;
 		var shape = self.font.generateShapes(text, size);
 		var geometry = new THREE.ShapeGeometry(shape);
 		geometry.computeBoundingBox();
@@ -56,32 +59,40 @@ var Object = function(parent, mesh, filename, index, font, camera) {
     }
     self.init();
 
-    self.tick = function(dt) {
+    self.tick = function(dt, boneControls) {
         if (!self.rescaled) {
             self.rescale();
             self.rescaled = true;
-        }
+        } else {
+			self.interactiveSkeleton.tick(boneControls);
+		}
 		if (self.animationMixer) self.animationMixer.update(dt);
 		self.text.rotation.copy(camera.rotation);
 		self.boxHelper.visible = self.selected;
     }
+
+	self.select = function(mouse, rendererDomElement) {
+		self.interactiveSkeleton.select(mouse, rendererDomElement, self.camera);
+	}
 
     self.rescale = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
         else var object = self.mesh;
 		if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) {
             if (self.mesh.animations.length > 0) {
+				self.animations = self.mesh.animations;
 				self.animationMixer = new THREE.AnimationMixer(self.mesh.scene);
 				for(var i = 0; i < self.mesh.animations.length; i++) {
 					const action = self.animationMixer.clipAction(self.mesh.animations[i]);
-					action.play();
+					//action.play();
 				}
             }
         } else{
             if (object.animations.length > 0) {
+				self.animations = object.animations;
                 self.animationMixer = new THREE.AnimationMixer(object);
                 const action = self.animationMixer.clipAction(object.animations[0]);
-                action.play();
+                //action.play();
             }
         }
 		object.updateMatrixWorld();
@@ -102,10 +113,10 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		object.scale.multiplyScalar(120/radius);
         object.position.set(self.index*200, 0, 0);
 		object.updateMatrixWorld();
-		self.text = self.generateText(self.filename, object.worldToLocal(new THREE.Vector3(0, 20, 0)).y);
+		self.text = self.generateText(self.filename, object.worldToLocal(new THREE.Vector3(0, 10, 0)).y);
 		object.add(self.text);
 		self.text.rotation.y = Math.PI/2;
-		self.text.position.y = object.worldToLocal(new THREE.Vector3(0, 110, 0)).y;
+		self.text.position.y = object.worldToLocal(new THREE.Vector3(0, 170, 0)).y;
 		self.text.renderOrder = 1;
 		self.text.material.depthTest = false;
 
@@ -122,6 +133,9 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.box = boxRaycast;
 		self.box.visible = false;
 		self.boxHelper.visible = false;
+
+
+		self.interactiveSkeleton = new InteractiveSkeleton(self);
 	}
 	
 	self.makeBoxBufferGeometry = function(from, to) {
@@ -169,6 +183,8 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		);
 		return new THREE.BufferGeometry().fromGeometry(geometry);
 	}
+	self.rescale();
+	self.rescaled = true;
 
 }
 

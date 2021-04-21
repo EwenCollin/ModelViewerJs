@@ -25,10 +25,7 @@ var Loader = function(parentGroup, camera) {
     }
     self.init();
 
-    self.tick = function(dt) {
-        for(var i = 0; i < self.objects.length; i++) {
-            self.objects[i].tick(dt);
-        }
+    self.tick = function() {
         if (self.loadedItems === self.toLoad.length) {
             document.getElementById("progress-bar2").style.width = 0;
             document.getElementById("progress-bar2").innerText = "";

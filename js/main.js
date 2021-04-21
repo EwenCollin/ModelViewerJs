@@ -181,8 +181,8 @@ function animate() {
 
 	controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
 	render();
-	loader.tick(clock.getDelta());
-	interaction.tick();
+	loader.tick();
+	interaction.tick(clock.getDelta());
 }
 
 function render() {
