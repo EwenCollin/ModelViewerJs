@@ -14,6 +14,22 @@ var InteractiveSkeleton = function(object) {
     self.selectedBone;
     self.skeleton;
 
+    self.updateBoneMesh = function(boneMesh, vFrom, vTo) {
+        var from = new THREE.Vector3();
+        var to = new THREE.Vector3();
+        vFrom.getWorldPosition(from);
+        vTo.getWorldPosition(to);
+        
+        var newPos = new THREE.Vector3();
+        newPos.setFromMatrixPosition(vFrom.matrixWorld);
+        boneMesh.position.copy(boneMesh.parent.worldToLocal(newPos));
+
+        var targetPos = new THREE.Vector3();
+        targetPos.setFromMatrixPosition(vTo.matrixWorld);
+        boneMesh.lookAt(targetPos);
+        boneMesh.scale.set(1, 1, from.distanceTo(to));
+    }
+
     self.init = function() {
         self.mesh.traverse(function(child) {
             if ( child.isMesh ) {
@@ -36,6 +52,7 @@ var InteractiveSkeleton = function(object) {
 
             var material = new THREE.MeshBasicMaterial({color: 0xffff00});
             var boneMesh = new THREE.Mesh(geometry, material);
+
             boneMesh.position.setFromMatrixPosition(vFrom.matrixWorld);
             boneMesh.updateMatrixWorld(true);
             var targetPos = new THREE.Vector3();
@@ -58,7 +75,9 @@ var InteractiveSkeleton = function(object) {
                     var boneMesh = createBoneMesh(vertexFrom, vertexTo);
                     self.mesh.attach(boneMesh);
                     self.bonesMesh.push(boneMesh);
-                    self.boneMap[boneMesh.uuid] = vertexFrom;
+                    boneMesh.renderOrder = 1;
+                    boneMesh.material.depthTest = false;
+                    self.boneMap[boneMesh.uuid] = [vertexFrom, vertexTo];
                 }
             }
         }
@@ -86,14 +105,30 @@ var InteractiveSkeleton = function(object) {
 
 
     self.tick = function(boneControls) {
+
         self.boneControls = boneControls;
         if(self.selectedBone !== undefined) {
             //self.selectedBone.updateMatrixWorld(true);
-            self.boneMap[self.selectedBone.uuid].rotation.copy(self.selectedBone.rotation);
+            self.boneMap[self.selectedBone.uuid][0].quaternion.copy(self.selectedBone.quaternion);
+            self.skeleton.update();
             //console.log("here comes the matrix (world) : ", self.selectedBone.matrixWorld);
             //self.boneMap[self.selectedBone.uuid].updateMatrixWorld(true);
             //self.skeleton.update();
         }
+        
+        for(var b in self.bonesMesh) {
+            var boneMesh = self.bonesMesh[b];
+            var vertexFrom = self.boneMap[boneMesh.uuid][0];
+            var vertexTo = self.boneMap[boneMesh.uuid][1];
+            self.updateBoneMesh(boneMesh, vertexFrom, vertexTo);
+        }
+
+        /*
+        for(var b in self.bonesMesh) {
+            var boneMesh = self.bonesMesh[b];
+            boneMesh.matrixWorld.copy(self.boneMap[boneMesh.uuid].matrixWorld);
+        }*/
+
         /*
         for(var i in self.objectBones) {
             for(var bone in self.objectBones[i]["bones"]) {
