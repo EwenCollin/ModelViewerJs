@@ -57,6 +57,7 @@ var InteractiveSkeleton = function(object) {
             boneMesh.updateMatrixWorld(true);
             var targetPos = new THREE.Vector3();
             targetPos.setFromMatrixPosition(vTo.matrixWorld);
+            boneMesh.up = new THREE.Vector3(0, 0, 1);
             boneMesh.lookAt(targetPos);
             boneMesh.updateMatrixWorld(true);
             boneMesh.scale.set(1, 1, from.distanceTo(to));
@@ -99,9 +100,10 @@ var InteractiveSkeleton = function(object) {
         if(rayResult.length > 0) {
             var selectedObject = rayResult[0].object;
             self.boneControls.attach(selectedObject);
-            self.selectedBone = selectedObject;
+            self.selectedBone = {mesh: selectedObject, lastRotation: selectedObject.quaternion.clone()};
         }
     }
+
 
 
     self.tick = function(boneControls) {
@@ -109,8 +111,19 @@ var InteractiveSkeleton = function(object) {
         self.boneControls = boneControls;
         if(self.selectedBone !== undefined) {
             //self.selectedBone.updateMatrixWorld(true);
-            self.boneMap[self.selectedBone.uuid][0].quaternion.copy(self.selectedBone.quaternion);
+            /*
+            var boneRotation = self.boneMap[self.selectedBone.mesh.uuid][0].rotation;
+            var boneMeshRotation = self.selectedBone.mesh.rotation;
+            var lastBoneMeshRotation = self.selectedBone.lastRotation;
+            self.boneMap[self.selectedBone.mesh.uuid][0].rotation.copy(new THREE.Euler(
+                (boneMeshRotation.x - lastBoneMeshRotation.x) % Math.PI,
+                (boneMeshRotation.y - lastBoneMeshRotation.y) % Math.PI,
+                (boneMeshRotation.z - lastBoneMeshRotation.z) % Math.PI
+            ));*/
+            self.boneMap[self.selectedBone.mesh.uuid][0].quaternion.premultiply(self.selectedBone.mesh.quaternion.clone().normalize().multiply(self.selectedBone.lastRotation.normalize().invert()));
             self.skeleton.update();
+            //self.selectedBone.lastRotation.copy(self.selectedBone.mesh.rotation.clone());
+            self.selectedBone.lastRotation.copy(self.selectedBone.mesh.quaternion.clone());
             //console.log("here comes the matrix (world) : ", self.selectedBone.matrixWorld);
             //self.boneMap[self.selectedBone.uuid].updateMatrixWorld(true);
             //self.skeleton.update();
@@ -118,9 +131,11 @@ var InteractiveSkeleton = function(object) {
         
         for(var b in self.bonesMesh) {
             var boneMesh = self.bonesMesh[b];
-            var vertexFrom = self.boneMap[boneMesh.uuid][0];
-            var vertexTo = self.boneMap[boneMesh.uuid][1];
-            self.updateBoneMesh(boneMesh, vertexFrom, vertexTo);
+            if(!(self.selectedBone !== undefined && boneMesh === self.selectedBone.mesh)) {
+                var vertexFrom = self.boneMap[boneMesh.uuid][0];
+                var vertexTo = self.boneMap[boneMesh.uuid][1];
+                self.updateBoneMesh(boneMesh, vertexFrom, vertexTo);
+            }
         }
 
         /*
