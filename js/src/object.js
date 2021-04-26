@@ -103,7 +103,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					child.updateMatrix();
 					child.updateMatrixWorld();
 					const helper = new THREE.SkeletonHelper(child.skeleton.bones[0]);
-					//self.parent.add(helper);
+					self.parent.add(helper);
 				}
 			}
 		});

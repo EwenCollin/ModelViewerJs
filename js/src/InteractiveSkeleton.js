@@ -5,83 +5,129 @@ var InteractiveSkeleton = function(object) {
     var self = this;
     self.object = object;
     self.mesh = self.object.mesh;
+    if (self.object.filename.endsWith(".gltf") || self.object.filename.endsWith(".glb")) self.mesh = self.object.mesh.scene;
     self.animations = self.object.animations;
-    self.objectBones = [];
-    self.bonesMesh = [];
+    self.skeletonMesh = new THREE.Group();
+    self.mesh.add(self.skeletonMesh);
     self.raycaster = new THREE.Raycaster();
     self.boneControls;
-    self.boneMap = {};
+    self.boneMap = [];
+    self.boneArray = [];
     self.selectedBone;
-    self.skeleton;
 
-    self.updateBoneMesh = function(boneMesh, vFrom, vTo) {
-        var from = new THREE.Vector3();
-        var to = new THREE.Vector3();
-        vFrom.getWorldPosition(from);
-        vTo.getWorldPosition(to);
-        
-        var newPos = new THREE.Vector3();
-        newPos.setFromMatrixPosition(vFrom.matrixWorld);
-        boneMesh.position.copy(boneMesh.parent.worldToLocal(newPos));
+    self.skinnedMesh = [];
+    self.skeleton = [];
+    self.geometryAttributes = [];
+    self.initialPositions = [];
+    self.initialBonesMatrix = [];
+    self.initialMeshMatrix;
 
-        var targetPos = new THREE.Vector3();
-        targetPos.setFromMatrixPosition(vTo.matrixWorld);
-        boneMesh.lookAt(targetPos);
-        boneMesh.scale.set(1, 1, from.distanceTo(to));
-    }
 
     self.init = function() {
         self.mesh.traverse(function(child) {
             if ( child.isMesh ) {
 				if (child.skeleton) {
 					console.log(child.skeleton);
-                    self.skeleton = child.skeleton;
-                    self.objectBones.push({"child": child, "bones": child.skeleton.bones});
+                    self.skeleton.push(child.skeleton);
+                    self.geometryAttributes.push(child.geometry.attributes);
+                    self.skinnedMesh.push(child);
+                    self.boneMap.push({});
 				}
 			}
         });
 
-        var createBoneMesh = function(vFrom, vTo) {
-            var from = new THREE.Vector3();
-            var to = new THREE.Vector3();
-            vFrom.getWorldPosition(from);
-            vTo.getWorldPosition(to);
+        var createBoneMesh = function(vTo, vFrom, skeletonID) {
+            
+            var bone = new THREE.Group();
+            bone.applyMatrix4(vTo.matrixWorld);
+            bone.updateMatrixWorld(true);
+
             var geometry = new THREE.ConeBufferGeometry(1, 1, 4, 1);
             geometry.rotateX(Math.PI/2);
             geometry.translate(0, 0, 0.5);
-
-            var material = new THREE.MeshBasicMaterial({color: 0xffff00});
+            var boneColor = 0xFFFF00;
+            if (parseInt(skeletonID) !== 1) {
+                boneColor = 0xEE00EE;
+            }
+            var material = new THREE.MeshPhongMaterial({color: boneColor, transparent: true, opacity: 0.5});
             var boneMesh = new THREE.Mesh(geometry, material);
+            boneMesh.material.depthTest = false;
 
-            boneMesh.position.setFromMatrixPosition(vFrom.matrixWorld);
+            boneMesh.position.setFromMatrixPosition(vTo.matrixWorld);
             boneMesh.updateMatrixWorld(true);
             var targetPos = new THREE.Vector3();
-            targetPos.setFromMatrixPosition(vTo.matrixWorld);
+            targetPos.setFromMatrixPosition(vFrom.matrixWorld);
+            var eyePos = new THREE.Vector3();
+            eyePos.setFromMatrixPosition(vTo.matrixWorld);
             boneMesh.up = new THREE.Vector3(0, 0, 1);
             boneMesh.lookAt(targetPos);
-            boneMesh.updateMatrixWorld(true);
-            boneMesh.scale.set(1, 1, from.distanceTo(to));
+            boneMesh.scale.set(2.25, 2.25, eyePos.distanceTo(targetPos));
+            if(vTo.matrixWorld.equals(vFrom.matrixWorld)) boneMesh.scale.set(2.25, 2.25, 2.25);
 
-            return boneMesh;
+            bone.attach(boneMesh);
+
+            return bone;
         }
 
-        for(var i in self.objectBones) {
-            for(var bone in self.objectBones[i]["bones"]) {
-                console.log(self.objectBones[i]["bones"][bone]);
-                var vertexFrom = self.objectBones[i]["bones"][bone];
-                for(var child in self.objectBones[i]["bones"][bone].children) {
-                    var vertexTo = self.objectBones[i]["bones"][bone].children[child];
-                    vertexFrom.updateMatrixWorld(true);
-                    vertexTo.updateMatrixWorld(true);
-                    var boneMesh = createBoneMesh(vertexFrom, vertexTo);
-                    self.mesh.attach(boneMesh);
-                    self.bonesMesh.push(boneMesh);
-                    boneMesh.renderOrder = 1;
-                    boneMesh.material.depthTest = false;
-                    self.boneMap[boneMesh.uuid] = [vertexFrom, vertexTo];
+
+        var tempBoneArrays = [];
+        for(var s in self.skeleton) {
+            var skeletonBoneArray = [];
+            for(var c in self.skeleton[s].bones) {
+                skeletonBoneArray.push(self.skeleton[s].bones[c].uuid);
+            }
+            tempBoneArrays.push(skeletonBoneArray);
+        }
+
+
+        var indexBoneRecursive = function(parent, currentBone) {
+            if(currentBone.children.length > 0) {
+                for(var c in currentBone.children) {
+                    var bone = createBoneMesh(currentBone, currentBone.children[c], 1);
+                    parent.attach(bone);
+                    indexBoneRecursive(bone, currentBone.children[c]);
+                }
+            }
+            else {
+                
+            }
+            for(var s in tempBoneArrays) {
+                if(tempBoneArrays[s].includes(currentBone.uuid)) {
+                    self.boneMap[s][currentBone.uuid] = bone;
                 }
             }
         }
+
+        
+        indexBoneRecursive(self.skeletonMesh, self.skeleton[s].bones[0]);
+
+        for(var s in self.skeleton) {
+            var boneArraySingle = [];
+            var initialBonesMatrixSingle = [];
+            for(var c = 0; c < self.skeleton[s].bones.length; c++) {
+                if(self.boneMap[s][self.skeleton[s].bones[c].uuid] !== undefined) {
+                    self.boneMap[s][self.skeleton[s].bones[c].uuid].updateMatrixWorld(true);
+                    boneArraySingle.push(self.boneMap[s][self.skeleton[s].bones[c].uuid]);
+                    //console.log(self.boneMap[s][self.skeleton[s].bones[c].uuid]);
+                    //console.log("skeleton:", s, " bone:", c, "full:", self.boneMap, self.skeleton[s].bones[c].uuid, tempBoneArrays);
+                    initialBonesMatrixSingle.push(self.boneMap[s][self.skeleton[s].bones[c].uuid].matrixWorld.clone().invert());
+                }
+                else {
+                    console.log("invalid uuid for bone");
+                }
+            }
+            self.boneArray.push(boneArraySingle);
+            self.initialBonesMatrix.push(initialBonesMatrixSingle);
+            self.initialPositions.push(self.geometryAttributes[s].position.clone());
+        }
+
+        self.initialMeshMatrix = self.mesh.matrixWorld.clone();
+
+        /*
+        for(var s in self.skinnedMesh) {
+            self.skinnedMesh[s].matrixAutoUpdate = false;
+        }*/
+
     }
     self.init();
 
@@ -94,14 +140,86 @@ var InteractiveSkeleton = function(object) {
     }
 
     self.select = function(mouse, rendererDomElement, camera) {
-        var objectsToIntersect = self.bonesMesh;
+        var objectsToIntersect = self.skeletonMesh.children;
         var rayResult = self.raycast(mouse, objectsToIntersect, rendererDomElement, camera);
         console.log(rayResult);
         if(rayResult.length > 0) {
-            var selectedObject = rayResult[0].object;
+            var selectedObject = rayResult[0].object.parent;
+            console.log(selectedObject);
             self.boneControls.attach(selectedObject);
             self.selectedBone = {mesh: selectedObject, lastRotation: selectedObject.quaternion.clone()};
         }
+    }
+
+    self.updateGeometry = function() {
+        var objMatrixWorld_inv = self.mesh.matrixWorld.clone().invert();
+        var objInitialMatrixWorld_inv = self.initialMeshMatrix.clone().invert();
+        var A1 = new THREE.Matrix4();
+        var A2 = new THREE.Matrix4();
+        var M = new THREE.Matrix4();
+        var Mf = new THREE.Matrix4();
+        var vertexPosition = new THREE.Vector3();
+        //TODO : replace Vec4 with array to store more weights if needed
+        var boneIndex = new THREE.Vector4();
+        var boneWeight = new THREE.Vector4();
+        for(var s in self.skeleton) {
+            var vertexPositionsAttribute = self.initialPositions[s];
+
+            var vertexIndexAttribute = self.geometryAttributes[s].skinIndex;
+
+            var boneWeightAttribute = self.geometryAttributes[s].skinWeight;
+
+            var vertexCount = vertexPositionsAttribute.count;
+            var outputVertexArray = self.geometryAttributes[s].position.array;
+
+            for(var Kvertex = 0; Kvertex < vertexCount; Kvertex++) {
+                vertexPosition.fromBufferAttribute(vertexPositionsAttribute, Kvertex);
+                boneIndex.fromBufferAttribute(vertexIndexAttribute, Kvertex);
+                boneWeight.fromBufferAttribute(boneWeightAttribute, Kvertex);
+                
+                //if(self.skeleton.length === 1) boneIndex = boneIndex - 1;
+                //if (boneIndex >= self.boneArray.length) console.log(boneIndex);
+                //if (!self.boneArray[s][boneIndex]) console.log("undefined bone", s, boneIndex);
+
+
+                Mf.set(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0);
+                
+                //TODO : use the item size of vertexIndexAttribute to use the following loop (4 is constant but should be replaced)
+                for(var Kdependency = 0; Kdependency < 4; Kdependency++) {
+
+                    var i = boneIndex.getComponent(Kdependency);
+
+                    var T = self.boneArray[s][i].matrixWorld;
+                    var T0_inv = self.initialBonesMatrix[s][i];
+
+                    var weight = boneWeight.getComponent(Kdependency);
+
+                    M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));
+
+                    for(var n = 0; n < 16; n++) {
+                        Mf.elements[n] += M.elements[n] * weight;
+                    }
+
+                }
+                
+                vertexPosition.applyMatrix4(Mf);
+
+                /*
+
+                var T = self.boneArray[s][boneIndex].matrixWorld;
+                var T0_inv = self.initialBonesMatrix[s][boneIndex];
+
+                vertexPosition.applyMatrix4(M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix)));
+                */
+                
+                outputVertexArray[Kvertex*3] = vertexPosition.x;
+                outputVertexArray[Kvertex*3 + 1] = vertexPosition.y;
+                outputVertexArray[Kvertex*3 + 2] = vertexPosition.z;
+    
+            }
+            self.geometryAttributes[s].position.needsUpdate = true;
+        }
+        
     }
 
 
@@ -109,49 +227,21 @@ var InteractiveSkeleton = function(object) {
     self.tick = function(boneControls) {
 
         self.boneControls = boneControls;
-        if(self.selectedBone !== undefined) {
-            //self.selectedBone.updateMatrixWorld(true);
-            /*
-            var boneRotation = self.boneMap[self.selectedBone.mesh.uuid][0].rotation;
-            var boneMeshRotation = self.selectedBone.mesh.rotation;
-            var lastBoneMeshRotation = self.selectedBone.lastRotation;
-            self.boneMap[self.selectedBone.mesh.uuid][0].rotation.copy(new THREE.Euler(
-                (boneMeshRotation.x - lastBoneMeshRotation.x) % Math.PI,
-                (boneMeshRotation.y - lastBoneMeshRotation.y) % Math.PI,
-                (boneMeshRotation.z - lastBoneMeshRotation.z) % Math.PI
-            ));*/
-            self.boneMap[self.selectedBone.mesh.uuid][0].quaternion.premultiply(self.selectedBone.mesh.quaternion.clone().normalize().multiply(self.selectedBone.lastRotation.normalize().invert()));
-            self.skeleton.update();
-            //self.selectedBone.lastRotation.copy(self.selectedBone.mesh.rotation.clone());
-            self.selectedBone.lastRotation.copy(self.selectedBone.mesh.quaternion.clone());
-            //console.log("here comes the matrix (world) : ", self.selectedBone.matrixWorld);
-            //self.boneMap[self.selectedBone.uuid].updateMatrixWorld(true);
-            //self.skeleton.update();
-        }
-        
-        for(var b in self.bonesMesh) {
-            var boneMesh = self.bonesMesh[b];
-            if(!(self.selectedBone !== undefined && boneMesh === self.selectedBone.mesh)) {
-                var vertexFrom = self.boneMap[boneMesh.uuid][0];
-                var vertexTo = self.boneMap[boneMesh.uuid][1];
-                self.updateBoneMesh(boneMesh, vertexFrom, vertexTo);
-            }
-        }
-
         /*
-        for(var b in self.bonesMesh) {
-            var boneMesh = self.bonesMesh[b];
-            boneMesh.matrixWorld.copy(self.boneMap[boneMesh.uuid].matrixWorld);
+        for(var s in self.skinnedMesh) {
+            self.skinnedMesh[s].matrix.copy(self.mesh.matrix.clone().invert());
+            self.skinnedMesh[s].matrixAutoUpdate = false;
+            self.skinnedMesh[s].updateMatrixWorld(true);
         }*/
 
-        /*
-        for(var i in self.objectBones) {
-            for(var bone in self.objectBones[i]["bones"]) {
-                for(var child in self.objectBones[i]["bones"][bone].children) {
-                    //if(self.objectBones[i]["bones"][bone].children[child].isMesh) self.objectBones[i]["bones"][bone].children[child].applyMatrix4(self.objectBones[i]["bones"][bone].matrixWorld);
-                }
-            }
-        }*/
+        for(var s in self.boneArray) {
+            for(var c in self.boneArray[s]) {
+                self.boneArray[s][c].updateMatrixWorld(true);
+            } 
+        }
+        self.updateGeometry();
+        //self.skeletonMesh.scale.copy(tempScale);
+
     }
 }
 
