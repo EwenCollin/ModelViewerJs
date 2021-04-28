@@ -71,36 +71,145 @@ var InteractiveSkeleton = function(object) {
 
 
         var tempBoneArrays = [];
+        var tempMap = [];
         for(var s in self.skeleton) {
             var skeletonBoneArray = [];
             for(var c in self.skeleton[s].bones) {
                 skeletonBoneArray.push(self.skeleton[s].bones[c].uuid);
             }
+            tempMap.push({});
             tempBoneArrays.push(skeletonBoneArray);
         }
 
-
-        var indexBoneRecursive = function(parent, currentBone) {
-            if(currentBone.children.length > 0) {
-                for(var c in currentBone.children) {
-                    var bone = createBoneMesh(currentBone, currentBone.children[c], 1);
-                    parent.attach(bone);
-                    indexBoneRecursive(bone, currentBone.children[c]);
-                }
-            }
-            else {
-                
-            }
+        var indexBoneRecursive = function(parentMesh, parentBone) {
+            var bone = createBoneMesh(parentBone.parent, parentBone, 1);
+            parentMesh.attach(bone);
+            
+            /*
             for(var s in tempBoneArrays) {
-                if(tempBoneArrays[s].includes(currentBone.uuid)) {
-                    self.boneMap[s][currentBone.uuid] = bone;
+                if(tempBoneArrays[s].includes(parentBone.parent.uuid)) {
+                    self.boneMap[s][parentBone.uuid] = bone;
                 }
+            }*/
+            for(var c in parentBone.children) {
+                for(var s in tempBoneArrays) {
+                    if(tempBoneArrays[s].includes(parentBone.uuid) && parentBone.children.length === 1) {
+                        self.boneMap[s][parentBone.uuid] = indexBoneRecursive(bone, parentBone.children[c]);
+                    }
+                    else {
+                        self.boneMap[s][parentBone.uuid] = bone;
+                        indexBoneRecursive(bone, parentBone.children[c]);
+                    }
+                }
+            }
+            if(parentBone.children.length === 0) {
+                for(var s in tempBoneArrays) {
+                    if(tempBoneArrays[s].includes(parentBone.parent.uuid) && parentBone) {
+                        self.boneMap[s][parentBone.uuid] = bone;
+                    }
+                }
+            }
+            return bone;
+        }
+        
+        /*
+        var indexBoneRecursive = function(parentBone, rootMesh) {
+            if(parentBone.parent && parentBone.parent.isBone) {
+                var currentBone = createBoneMesh(parentBone.parent, parentBone);
+            }
+            else var currentBone = rootMesh;
+            var children = [];
+            for(var c = 0; c < parentBone.children.length; c++) {
+                var child = parentBone.children[c];
+                children.push([indexBoneRecursive(child), child]);
+                for(var s in tempBoneArrays) {
+                    if(tempBoneArrays[s].includes(child.uuid)) self.boneMap[s][child.uuid] = children[children.length - 1][0];
+                }
+            }
+            
+            for(var i = 0; i < children.length; i++) {
+                
+                if(children[i][1].children.length === 0 && parentBone.children.length === 2) {
+                    for(var c in parentBone.children) {
+                        if (parentBone.children[c].uuid !== children[i][1].uuid && parentBone.children[c].children.length > 0) {
+                            
+                            for(var s in tempBoneArrays) {
+                                if(tempBoneArrays[s].includes(children[i][1].uuid)) {
+                                    self.boneMap[s][children[i][1].uuid] = children[i][0];
+                                }
+                            }
+                            children[c][0].attach(children[i][0]);
+                        }
+                    }
+                }
+                else currentBone.attach(children[i][0]);
+            }
+            return currentBone;
+        }*/
+
+        
+        var indexBoneRecursive = function(parentMesh, parentBone) {
+            for(var c in parentBone.children) {
+                var bone = createBoneMesh(parentBone, parentBone.children[c], 1);
+                parentMesh.attach(bone);
+                for(var s in tempBoneArrays) {
+                    if(tempBoneArrays[s].includes(parentBone.children[c].uuid)) {
+                        self.boneMap[s][parentBone.children[c].uuid] = bone;
+                    }
+                }
+                indexBoneRecursive(bone, parentBone.children[c]);
             }
         }
 
-        
         indexBoneRecursive(self.skeletonMesh, self.skeleton[s].bones[0]);
+        self.boneMap[s][self.skeleton[s].bones[0].uuid] = self.skeletonMesh;
+        console.log("self.boneMap", self.boneMap);
+        /*
+        var skeletonCloneMap = {};
+        var cloneSkeleton = function(parent) {
+            var clone = parent.clone();
+            skeletonCloneMap[parent.uuid] = clone;
+            for(var i = 0; i < parent.children.length; i++) {
+                clone.attach(cloneSkeleton(parent.children[i]));
+            }
+            return clone;
+        }
 
+        self.skeletonMesh.attach(self.skeleton[1].bones[0]);
+
+        var tempBoneArrays = [];
+        var tempMap = [];
+        for(var s in self.skeleton) {
+            var skeletonBoneArray = [];
+            for(var c in self.skeleton[s].bones) {
+                skeletonBoneArray.push(self.skeleton[s].bones[c].uuid);
+            }
+            tempMap.push({});
+            tempBoneArrays.push(skeletonBoneArray);
+        }
+
+        var indexBoneRecursive = function(parentBone) {
+            var children = [];
+            for(var c in parentBone.children) {
+                var bone = createBoneMesh(parentBone, parentBone.children[c], 1);
+                children.push(bone);
+                
+                for(var s in tempBoneArrays) {
+                    if(tempBoneArrays[s].includes(parentBone.children[c].uuid)) {
+                        self.boneMap[s][parentBone.children[c].uuid] = bone;
+                    }
+                }
+                indexBoneRecursive(parentBone.children[c]);
+            }
+            for(var c in children) {
+                parentBone.attach(children[c]);
+            }
+        }
+
+        indexBoneRecursive(self.skeletonMesh.children[0]);
+        */
+
+        console.log("next step");
         for(var s in self.skeleton) {
             var boneArraySingle = [];
             var initialBonesMatrixSingle = [];
@@ -113,7 +222,7 @@ var InteractiveSkeleton = function(object) {
                     initialBonesMatrixSingle.push(self.boneMap[s][self.skeleton[s].bones[c].uuid].matrixWorld.clone().invert());
                 }
                 else {
-                    console.log("invalid uuid for bone");
+                    console.log("invalid uuid for bone");//, self.skeleton[s].bones[c]);
                 }
             }
             self.boneArray.push(boneArraySingle);
@@ -188,16 +297,17 @@ var InteractiveSkeleton = function(object) {
                 for(var Kdependency = 0; Kdependency < 4; Kdependency++) {
 
                     var i = boneIndex.getComponent(Kdependency);
-
-                    var T = self.boneArray[s][i].matrixWorld;
-                    var T0_inv = self.initialBonesMatrix[s][i];
-
-                    var weight = boneWeight.getComponent(Kdependency);
-
-                    M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));
-
-                    for(var n = 0; n < 16; n++) {
-                        Mf.elements[n] += M.elements[n] * weight;
+                    if(self.boneArray[s][i]) {
+                        var T = self.boneArray[s][i].matrixWorld;
+                        var T0_inv = self.initialBonesMatrix[s][i];
+    
+                        var weight = boneWeight.getComponent(Kdependency);
+    
+                        M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));
+    
+                        for(var n = 0; n < 16; n++) {
+                            Mf.elements[n] += M.elements[n] * weight;
+                        }
                     }
 
                 }
