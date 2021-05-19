@@ -25,15 +25,18 @@ var InteractiveSkeleton = function(object) {
     self.reprBoneMatrix = [];
     self.reprBoneIndex = [];
 
+    self.transformGroup = new THREE.Group();
+    self.mesh.attach(self.transformGroup);
+
 
     
     self.createBoneArrays = function(bones) {
         var boneIndex = [];
         var boneMatrix = [];
         for(var b = 0; b < bones.length; b++) {
-            boneMatrix.push(bones[b].matrix); //replace with bones.matrixWorld * boneParent.matrixWorld_inv
+            boneMatrix.push(bones[b].matrix);
             var i = 0;
-            while(bones[i].uuid !== bones[b].parent.uuid && i < bones.length) {
+            while(i < bones.length && bones[i].uuid !== bones[b].parent.uuid) {
                 i++;
             }
             if(i === bones.length) {
@@ -54,10 +57,40 @@ var InteractiveSkeleton = function(object) {
                 i++;
             }
             var worldMatrix = new THREE.Matrix4();
-            worldMatrixboneMatrix.multiplyMatrices(boneMatrix[b], boneMatrix[i]);
-            finalBoneMatrix.push(worldMatrixboneMatrix);
+            worldMatrix.multiplyMatrices(boneMatrix[b], boneMatrix[i]);
+            finalBoneMatrix.push(worldMatrix);
         }
         return finalBoneMatrix;
+    }
+
+    self.applyMatrixToRoot = function(boneMatrix, boneIndex, matrix) {
+        var finalBoneMatrix = [];
+        var i = 0;
+        while(boneIndex[i] !== -1) {
+            i++;
+        }
+        for(var m = 0; m < boneMatrix.length; m++) {
+            var matrixCopy = new THREE.Matrix4();
+
+            if(m === i) {
+                matrixCopy.multiplyMatrices(matrix, boneMatrix[m]);
+            }
+            else {
+                matrixCopy.copy(boneMatrix[m]); //refactor : remove else ?
+            }
+            finalBoneMatrix.push(matrixCopy);
+        }
+        return finalBoneMatrix;
+    }
+
+    self.updateReprMatrixWorld = function() {
+        for(var s = 0; s < self.boneArray.length; s++) {
+            var reprBoneMatrixWorld = self.applyMatrixToRoot(self.reprBoneMatrix[s], self.reprBoneIndex[s], self.skeletonMesh.matrixWorld);
+            reprBoneMatrixWorld = self.recalculateMatrix(reprBoneMatrixWorld, self.reprBoneIndex[s]);
+            for(var b = 0; b < self.boneArray[s].length; b++) {
+                self.boneArray[s][b].matrixWorld.copy(reprBoneMatrixWorld[b]);
+            }
+        }
     }
 
     self.init = function() {
@@ -174,10 +207,11 @@ var InteractiveSkeleton = function(object) {
             for(var c = 0; c < self.skeleton[s].bones.length; c++) {
                 self.skeleton[s].bones[c].matrixAutoUpdate = false;
                 if(self.boneMap[s][self.skeleton[s].bones[c].uuid] !== undefined) {
-                    self.boneMap[s][self.skeleton[s].bones[c].uuid].updateMatrixWorld(true);
+                    //self.boneMap[s][self.skeleton[s].bones[c].uuid].updateMatrixWorld(true);
                     boneArraySingle.push(self.boneMap[s][self.skeleton[s].bones[c].uuid]);
                     
-
+                    
+                    self.boneMap[s][self.skeleton[s].bones[c].uuid].matrixAutoUpdate = false;
 
 
                 }
@@ -197,26 +231,53 @@ var InteractiveSkeleton = function(object) {
         for(var s in self.skeleton) {
 
 
-            var threejsJointsData = self.createBoneArrays(self.skeleton[s]);
-            self.threejsBoneIndex = threejsJointsData["boneIndex"];
-            self.threejsBoneMatrix = threejsJointsData["boneMatrix"];
+            var threejsJointsData = self.createBoneArrays(self.skeleton[s].bones);
+            self.threejsBoneIndex.push(threejsJointsData["boneIndex"]);
+            self.threejsBoneMatrix.push(threejsJointsData["boneMatrix"]);
 
-            var reprJointsData = self.createBoneArrays(self.boneArray[s]);
-            self.reprBoneIndex = reprJointsData["boneIndex"];
-            self.reprBoneMatrix = reprJointsData["boneMatrix"];
+            var reprJointsData = self.createBoneArrays(self.skeleton[s].bones);
+            self.reprBoneIndex.push(reprJointsData["boneIndex"]);
+            self.reprBoneMatrix.push(reprJointsData["boneMatrix"]);
+            
+            /*
+            var reprBoneMatrixWorld = self.applyMatrixToRoot(reprJointsData["boneMatrix"], reprJointsData["boneIndex"], self.skeletonMesh.matrixWorld);
+            reprBoneMatrixWorld = self.recalculateMatrix(reprBoneMatrixWorld, reprJointsData["boneIndex"]);
 
+            
+            for(var m = 0; m < reprJointsData["boneMatrix"].length; m++) {
+                //self.boneArray[s][m].matrix.copy(threejsJointsData["boneMatrix"][m]);
+                //self.boneArray[s][m].matrixWorld.copy(self.skeleton[s].bones[m].matrixWorld);
+                self.boneArray[s][m].matrixWorld.copy(reprBoneMatrixWorld[m]);
+
+
+
+                if(!reprJointsData["boneMatrix"][m].equals(threejsJointsData["boneMatrix"][m])) console.log("WARN : ambiguity");
+                else console.log("everything is fine");
+            }*/
 
         }
         
-
-        console.log(self.reprBoneMatrix);
-        console.log(self.threejsBoneMatrix);
-
-
+        self.updateReprMatrixWorld();
         /*
-        for(var s in self.skinnedMesh) {
-            self.skinnedMesh[s].matrixAutoUpdate = false;
+        for(var s in self.skeleton) {
+            for(var m = 0; m < self.reprBoneMatrix[s].length; m++) {
+                if(!self.reprBoneMatrix[s][m].equals(self.threejsBoneMatrix[s][m])) console.log("WARN : ambiguity in relative Matrix");
+                else console.log("everything is fine in relative Matrix");
+            }
+        }
+        for(var s in self.skeleton) {
+            for(var m = 0; m < self.reprBoneMatrix[s].length; m++) {
+                if(!self.boneArray[s][m].matrixWorld.equals(self.skeleton[s].bones[m].matrixWorld)) console.log("WARN : ambiguity in world Matrix");
+                else console.log("everything is fine in world Matrix");
+            }
         }*/
+
+
+        //console.log("reprBoneMatrix", self.reprBoneMatrix);
+        //console.log("threejsBoneMatrix", self.threejsBoneMatrix);
+
+        //console.log("reprBoneMatrixWorld", self.boneArray);
+        //console.log("threejsBoneMatrixWorld", self.skeleton);
 
     }
     self.init();
