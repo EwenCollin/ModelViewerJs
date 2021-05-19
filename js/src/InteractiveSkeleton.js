@@ -25,10 +25,13 @@ var InteractiveSkeleton = function(object) {
     self.reprBoneMatrix = [];
     self.reprBoneIndex = [];
 
+
+    self.reprBoneUUID = [];
+
     self.transformGroup = new THREE.Group();
     self.mesh.attach(self.transformGroup);
 
-
+    
     
     self.createBoneArrays = function(bones) {
         var boneIndex = [];
@@ -46,6 +49,26 @@ var InteractiveSkeleton = function(object) {
         }
         return {"boneIndex": boneIndex, "boneMatrix": boneMatrix};
     }
+    /*
+    self.createBoneArraysReverse = function(bones) {
+        var boneIndex = [];
+        var boneMatrix = [];
+        for(var b = 0; b < bones.length; b++) {
+            boneMatrix.push(bones[b].matrix);
+            for(var c = 0; c < bones[b].children.length; c++) {
+                var i = 0;
+                while(i < bones.length && bones[i].uuid !== bones[b].children[c].uuid) {
+                    i++;
+                }
+                if(i === bones.length) {
+                    i = -1;
+                }
+            }
+            boneIndex.push(i);
+        }
+        return {"boneIndex": boneIndex, "boneMatrix": boneMatrix};
+
+    }*/
 
 
     self.recalculateMatrix = function(boneMatrix, boneIndex) {
@@ -90,33 +113,24 @@ var InteractiveSkeleton = function(object) {
 
     self.updateReprMatrixWorld = function() {
         for(var s = 0; s < self.boneArray.length; s++) {
-            var reprBoneMatrixWorld = self.applyMatrixToRoot(self.reprBoneMatrix[s], self.reprBoneIndex[s], self.skeletonMesh.matrixWorld);
-            reprBoneMatrixWorld = self.recalculateMatrix(reprBoneMatrixWorld, self.reprBoneIndex[s]);
+            //var reprBoneMatrixWorld = self.applyMatrixToRoot(self.reprBoneMatrix[s], self.reprBoneIndex[s], self.skeletonMesh.matrixWorld);
+            var reprBoneMatrixWorld = self.recalculateMatrix(self.reprBoneMatrix[s], self.reprBoneIndex[s]);
             for(var b = 0; b < self.boneArray[s].length; b++) {
-                self.boneArray[s][b].matrixWorld.copy(reprBoneMatrixWorld[b]);
+                //self.boneArray[s][b].matrix.copy(reprBoneMatrixWorld[b]);
+                //self.boneArray[s][b].matrixWorld.copy(reprBoneMatrixWorld[b]);
             }
         }
     }
 
-    self.init = function() {
-        self.mesh.traverse(function(child) {
-            if ( child.isMesh ) {
-				if (child.skeleton) {
-					console.log(child.skeleton);
-                    self.skeleton.push(child.skeleton);
-                    self.geometryAttributes.push(child.geometry.attributes);
-                    self.skinnedMesh.push(child);
-                    self.boneMap.push({});
-				}
-			}
-        });
+
+    self.createBoneRepr = function(rawBones) {
 
         var createBoneMesh = function(vTo, vFrom, skeletonID) {
             
             var bone = new THREE.Group();
             bone.applyMatrix4(vTo.matrixWorld);
             bone.updateMatrixWorld(true);
-
+    
             var geometry = new THREE.ConeBufferGeometry(1, 1, 4, 1);
             geometry.rotateX(Math.PI/2);
             geometry.translate(0, 0, 0.5);
@@ -127,7 +141,7 @@ var InteractiveSkeleton = function(object) {
             var material = new THREE.MeshPhongMaterial({color: boneColor, transparent: true, opacity: 0.5});
             var boneMesh = new THREE.Mesh(geometry, material);
             boneMesh.material.depthTest = false;
-
+    
             boneMesh.position.setFromMatrixPosition(vTo.matrixWorld);
             boneMesh.updateMatrixWorld(true);
             var targetPos = new THREE.Vector3();
@@ -138,12 +152,11 @@ var InteractiveSkeleton = function(object) {
             boneMesh.lookAt(targetPos);
             boneMesh.scale.set(2.25, 2.25, eyePos.distanceTo(targetPos));
             if(vTo.matrixWorld.equals(vFrom.matrixWorld)) boneMesh.scale.set(2.25, 2.25, 2.25);
-
+    
             bone.attach(boneMesh);
-
+    
             return bone;
         }
-
 
         var tempBoneArrays = [];
         var tempMap = [];
@@ -194,44 +207,46 @@ var InteractiveSkeleton = function(object) {
         }
 
 
-        var rootBone = getParent(self.skeleton[s].bones[0]);
+        var rootBone = getParent(rawBones[0]);
+        console.log("rootBone", rootBone, "rawBones", rawBones);
         var rootMesh = createBoneMesh(rootBone, rootBone);
         
         indexBoneRecursive(rootMesh, rootBone);
         self.boneMap[s][rootBone.uuid] = rootMesh;
-        self.skeletonMesh.attach(rootMesh);
-
-
-        console.log("self.boneMap", self.boneMap);
 
         for(var s in self.skeleton) {
             var boneArraySingle = [];
-
-
-
+            var boneUUIDSingle = [];
             for(var c = 0; c < self.skeleton[s].bones.length; c++) {
                 self.skeleton[s].bones[c].matrixAutoUpdate = false;
                 if(self.boneMap[s][self.skeleton[s].bones[c].uuid] !== undefined) {
-                    //self.boneMap[s][self.skeleton[s].bones[c].uuid].updateMatrixWorld(true);
                     boneArraySingle.push(self.boneMap[s][self.skeleton[s].bones[c].uuid]);
-                    
-                    
+                    boneUUIDSingle.push(self.boneMap[s][self.skeleton[s].bones[c].uuid].uuid);
                     self.boneMap[s][self.skeleton[s].bones[c].uuid].matrixAutoUpdate = false;
-
-
+                    self.skeletonMesh.attach(self.boneMap[s][self.skeleton[s].bones[c].uuid]);
                 }
                 else {
-                    console.log("invalid uuid for bone");//, self.skeleton[s].bones[c]);
+                    console.log("invalid uuid for bone");
                 }
             }
             self.boneArray.push(boneArraySingle);
-
-
-
-
+            self.reprBoneUUID.push(boneUUIDSingle);
         }
-        console.log(self.boneArray);
+    }
 
+    self.init = function() {
+        self.mesh.traverse(function(child) {
+            if ( child.isMesh ) {
+				if (child.skeleton) {
+					console.log(child.skeleton);
+                    self.skeleton.push(child.skeleton);
+                    self.geometryAttributes.push(child.geometry.attributes);
+                    self.skinnedMesh.push(child);
+                    self.boneMap.push({});
+				}
+			}
+        });
+        self.createBoneRepr(self.skeleton[0].bones);
 
         for(var s in self.skeleton) {
 
@@ -244,46 +259,10 @@ var InteractiveSkeleton = function(object) {
             var reprJointsData = self.createBoneArrays(self.skeleton[s].bones);
             self.reprBoneIndex.push(reprJointsData["boneIndex"]);
             self.reprBoneMatrix.push(reprJointsData["boneMatrix"]);
-            
-            /*
-            var reprBoneMatrixWorld = self.applyMatrixToRoot(reprJointsData["boneMatrix"], reprJointsData["boneIndex"], self.skeletonMesh.matrixWorld);
-            reprBoneMatrixWorld = self.recalculateMatrix(reprBoneMatrixWorld, reprJointsData["boneIndex"]);
-
-            
-            for(var m = 0; m < reprJointsData["boneMatrix"].length; m++) {
-                //self.boneArray[s][m].matrix.copy(threejsJointsData["boneMatrix"][m]);
-                //self.boneArray[s][m].matrixWorld.copy(self.skeleton[s].bones[m].matrixWorld);
-                self.boneArray[s][m].matrixWorld.copy(reprBoneMatrixWorld[m]);
-
-
-
-                if(!reprJointsData["boneMatrix"][m].equals(threejsJointsData["boneMatrix"][m])) console.log("WARN : ambiguity");
-                else console.log("everything is fine");
-            }*/
 
         }
 
         self.updateReprMatrixWorld();
-        /*
-        for(var s in self.skeleton) {
-            for(var m = 0; m < self.reprBoneMatrix[s].length; m++) {
-                if(!self.reprBoneMatrix[s][m].equals(self.threejsBoneMatrix[s][m])) console.log("WARN : ambiguity in relative Matrix");
-                else console.log("everything is fine in relative Matrix");
-            }
-        }
-        for(var s in self.skeleton) {
-            for(var m = 0; m < self.reprBoneMatrix[s].length; m++) {
-                if(!self.boneArray[s][m].matrixWorld.equals(self.skeleton[s].bones[m].matrixWorld)) console.log("WARN : ambiguity in world Matrix");
-                else console.log("everything is fine in world Matrix");
-            }
-        }*/
-
-
-        //console.log("reprBoneMatrix", self.reprBoneMatrix);
-        //console.log("threejsBoneMatrix", self.threejsBoneMatrix);
-
-        //console.log("reprBoneMatrixWorld", self.boneArray);
-        //console.log("threejsBoneMatrixWorld", self.skeleton);
 
     }
     self.init();
@@ -310,19 +289,12 @@ var InteractiveSkeleton = function(object) {
             self.transformGroup.scale.set(1, 1, 1);
 
             self.boneControls.attach(self.transformGroup);
-            self.selectedBone = {mesh: selectedObject, lastMatrix: self.transformGroup.matrix.clone()};
+            self.selectedBone = {meshUUID: selectedObject.uuid, lastMatrix: self.transformGroup.matrix.clone().invert()};
         }
     }
 
     self.updateGeometry = function() {
 
-        var A1 = new THREE.Matrix4();
-        var A2 = new THREE.Matrix4();
-        var B1 = new THREE.Matrix4();
-        var B2 = new THREE.Matrix4();
-        var R1 = new THREE.Matrix4();
-        var R2 = new THREE.Matrix4();
-        var delta_T_representation = new THREE.Matrix4();
         var M = new THREE.Matrix4();
         var Mf = new THREE.Matrix4();
         var vertexPosition = new THREE.Vector3();
@@ -331,19 +303,12 @@ var InteractiveSkeleton = function(object) {
         var boneWeight = new THREE.Vector4();
         for(var s in self.skeleton) {
             var vertexPositionsAttribute = self.initialPositions[s];
-
             var vertexIndexAttribute = self.geometryAttributes[s].skinIndex;
-
             var boneWeightAttribute = self.geometryAttributes[s].skinWeight;
-
             var vertexCount = vertexPositionsAttribute.count;
             var outputVertexArray = self.geometryAttributes[s].position.array;
 
-            var boneMatrix = self.recalculateMatrix(self.reprBoneMatrix[s], self.reprBoneIndex[s]);
-
-
             var reprBoneMatrixWorld = self.recalculateMatrix(self.reprBoneMatrix[s], self.reprBoneIndex[s]);
-
             var threejsBoneMatrixWorld_inv = self.recalculateMatrix(self.threejsBoneMatrix[s], self.threejsBoneIndex[s]);
             for(var m in threejsBoneMatrixWorld_inv) {
                 threejsBoneMatrixWorld_inv[m].invert();
@@ -355,56 +320,24 @@ var InteractiveSkeleton = function(object) {
 
                 vertexPosition.fromBufferAttribute(vertexPositionsAttribute, Kvertex);
 
-
                 Mf.set(0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0);
                 
                 //TODO : use the item size of vertexIndexAttribute to use the following loop (4 is constant but should be replaced)
                 for(var Kdependency = 0; Kdependency < 4; Kdependency++) {
 
                     var i = boneIndex.getComponent(Kdependency);
-                    if(self.boneArray[s][i]) {
-                        var T = reprBoneMatrixWorld[i];
-                        var T0_inv = threejsBoneMatrixWorld_inv[i];
-                        var weight = boneWeight.getComponent(Kdependency);
-                        /*
-                        var T = self.boneArray[s][i].matrix;//self.skeleton[s].bones[i].matrixWorld;
-                        var T_initial_inv = self.jointsTransformMatrices[s][i];
-                        var T0_inv = self.initialBonesMatrix[s][i];
-                        var T0 = self.tmp_boneBindMatrices[s][i];
-    
-                        //M.multiplyMatrices(T, T0_inv);
-                        //R2.multiplyMatrices(B1.multiplyMatrices(objMatrixWorld_inv, self.skeleton[s].bones[i].matrixWorld), B2.multiplyMatrices(self.jointsTransformMatrices[s][i], self.initialMeshMatrix));
-                        //R1.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));
-                        //B1.multiplyMatrices(T, self.jointsTransformMatrices[s][i]);
-                        //B2.multiplyMatrices(T0_inv, self.tmp_rootBoneMatrix);
-                        delta_T_representation.multiplyMatrices(T, T_initial_inv);
-                        R1.multiplyMatrices(objMatrixWorld_inv, A1.multiplyMatrices(delta_T_representation, T0));
-                        R2.multiplyMatrices(T0_inv, self.initialMeshMatrix);
-                        M.multiplyMatrices(R1, R2);
-                        
-                        // p = bindMatrixInverse * T * T0_Inverse * bindMatrix p0
-                        //bindMatrix = meshMatrix * jointMatrix_inverse ?
-                        //M.multiplyMatrices(R1, R2);
-                        //M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));*/
-                        
-                        M.multiplyMatrices(T, T0_inv);
+                    var T = reprBoneMatrixWorld[i];
+                    var T0_inv = threejsBoneMatrixWorld_inv[i];
+                    var weight = boneWeight.getComponent(Kdependency);
+                    
+                    M.multiplyMatrices(T, T0_inv);
 
-                        for(var n = 0; n < 16; n++) {
-                            Mf.elements[n] += M.elements[n] * weight;
-                        }
+                    for(var n = 0; n < 16; n++) {
+                        Mf.elements[n] += M.elements[n] * weight;
                     }
 
                 }
-                
                 vertexPosition.applyMatrix4(Mf);
-
-                /*
-
-                var T = self.boneArray[s][boneIndex].matrixWorld;
-                var T0_inv = self.initialBonesMatrix[s][boneIndex];
-
-                vertexPosition.applyMatrix4(M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix)));
-                */
                 
                 outputVertexArray[Kvertex*3] = vertexPosition.x;
                 outputVertexArray[Kvertex*3 + 1] = vertexPosition.y;
@@ -416,12 +349,27 @@ var InteractiveSkeleton = function(object) {
         
     }
 
-
+    self.retrieveReprBoneFromUUID = function(uuid) {
+        for(var s in self.boneArray) {
+            for(var b in self.boneArray[s]) {
+                if(self.boneArray[s][b].uuid === uuid) return {skeleton: s, bone: b};
+            }
+        }
+    }
 
 
     self.tick = function(boneControls) {
 
         self.boneControls = boneControls;
+        
+        if(self.selectedBone !== undefined) {
+            var transformMatrix = new THREE.Matrix4();
+            var boneIndex = self.retrieveReprBoneFromUUID(self.selectedBone.meshUUID);
+            transformMatrix.multiplyMatrices(self.transformGroup.matrix, self.selectedBone.lastMatrix);
+            self.reprBoneMatrix[boneIndex.skeleton][boneIndex.bone].multiply(transformMatrix.multiplyMatrices(self.transformGroup.matrix, self.selectedBone.lastMatrix));
+            self.boneArray[boneIndex.skeleton][boneIndex.bone].matrix.multiply(transformMatrix.multiplyMatrices(self.transformGroup.matrix, self.selectedBone.lastMatrix));
+            self.selectedBone.lastMatrix.copy(self.transformGroup.matrix).invert();
+        }
 
         self.updateReprMatrixWorld();
         
