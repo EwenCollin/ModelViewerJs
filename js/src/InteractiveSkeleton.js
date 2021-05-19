@@ -18,7 +18,7 @@ var InteractiveSkeleton = function(object) {
     self.skinnedMesh = [];
     self.skeleton = [];
     self.geometryAttributes = [];
-
+    self.initialPositions = [];
 
     self.threejsBoneMatrix = [];
     self.threejsBoneIndex = [];
@@ -50,15 +50,20 @@ var InteractiveSkeleton = function(object) {
 
     self.recalculateMatrix = function(boneMatrix, boneIndex) {
         var finalBoneMatrix = [];
-        var currentParentIndex = -1;
-        for(var b = 0; b < boneMatrix.length; b++) {
-            var i = 0;
-            while(boneIndex[i] !== currentParentIndex) {
-                i++;
+        var currentBoneIndex = -1;
+        var j = 0;
+        for(var i = 0; i < boneMatrix.length; i++) {
+            finalBoneMatrix.push(new THREE.Matrix4());
+        }
+        while (j < boneMatrix.length) {
+            for(var b = 0; b < boneMatrix.length; b++) {
+                if(boneIndex[b] === currentBoneIndex) {
+                    if(currentBoneIndex !== -1) finalBoneMatrix[b].multiplyMatrices(finalBoneMatrix[currentBoneIndex], boneMatrix[b]);
+                    else finalBoneMatrix[b].copy(boneMatrix[b]);
+                    j++;
+                }
             }
-            var worldMatrix = new THREE.Matrix4();
-            worldMatrix.multiplyMatrices(boneMatrix[b], boneMatrix[i]);
-            finalBoneMatrix.push(worldMatrix);
+            currentBoneIndex++;
         }
         return finalBoneMatrix;
     }
@@ -230,6 +235,7 @@ var InteractiveSkeleton = function(object) {
 
         for(var s in self.skeleton) {
 
+            self.initialPositions.push(self.geometryAttributes[s].position.clone());
 
             var threejsJointsData = self.createBoneArrays(self.skeleton[s].bones);
             self.threejsBoneIndex.push(threejsJointsData["boneIndex"]);
@@ -256,7 +262,7 @@ var InteractiveSkeleton = function(object) {
             }*/
 
         }
-        
+
         self.updateReprMatrixWorld();
         /*
         for(var s in self.skeleton) {
@@ -297,16 +303,19 @@ var InteractiveSkeleton = function(object) {
         if(rayResult.length > 0) {
             var selectedObject = rayResult[0].object.parent;
             console.log(selectedObject);
-            self.boneControls.attach(selectedObject);
-            self.selectedBone = {mesh: selectedObject, lastRotation: selectedObject.quaternion.clone()};
+
+            selectedObject.add(self.transformGroup);
+            self.transformGroup.position.set(0, 0, 0);
+            self.transformGroup.rotation.set(0, 0, 0);
+            self.transformGroup.scale.set(1, 1, 1);
+
+            self.boneControls.attach(self.transformGroup);
+            self.selectedBone = {mesh: selectedObject, lastMatrix: self.transformGroup.matrix.clone()};
         }
     }
 
     self.updateGeometry = function() {
-        var objMatrixWorld_inv = self.mesh.matrixWorld.clone().invert();
-        var objInitialMatrixWorld_inv = self.initialMeshMatrix.clone().invert();
-        var rootBoneMatrixWorld_inv = self.tmp_rootBoneMatrix.clone().invert();
-        var rootJointMatrixWorld_inv = self.tmp_rootJointMatrix.clone().invert();
+
         var A1 = new THREE.Matrix4();
         var A2 = new THREE.Matrix4();
         var B1 = new THREE.Matrix4();
@@ -330,6 +339,8 @@ var InteractiveSkeleton = function(object) {
             var vertexCount = vertexPositionsAttribute.count;
             var outputVertexArray = self.geometryAttributes[s].position.array;
 
+            var boneMatrix = self.recalculateMatrix(self.reprBoneMatrix[s], self.reprBoneIndex[s]);
+
             for(var Kvertex = 0; Kvertex < vertexCount; Kvertex++) {
                 boneIndex.fromBufferAttribute(vertexIndexAttribute, Kvertex);
                 boneWeight.fromBufferAttribute(boneWeightAttribute, Kvertex);
@@ -344,12 +355,15 @@ var InteractiveSkeleton = function(object) {
 
                     var i = boneIndex.getComponent(Kdependency);
                     if(self.boneArray[s][i]) {
+                        var T = boneMatrix[i];
+                        var T0_inv = self.skeleton[s].boneInverses[i];
+                        var weight = boneWeight.getComponent(Kdependency);
+                        /*
                         var T = self.boneArray[s][i].matrix;//self.skeleton[s].bones[i].matrixWorld;
                         var T_initial_inv = self.jointsTransformMatrices[s][i];
                         var T0_inv = self.initialBonesMatrix[s][i];
                         var T0 = self.tmp_boneBindMatrices[s][i];
     
-                        var weight = boneWeight.getComponent(Kdependency);
                         //M.multiplyMatrices(T, T0_inv);
                         //R2.multiplyMatrices(B1.multiplyMatrices(objMatrixWorld_inv, self.skeleton[s].bones[i].matrixWorld), B2.multiplyMatrices(self.jointsTransformMatrices[s][i], self.initialMeshMatrix));
                         //R1.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));
@@ -363,8 +377,10 @@ var InteractiveSkeleton = function(object) {
                         // p = bindMatrixInverse * T * T0_Inverse * bindMatrix p0
                         //bindMatrix = meshMatrix * jointMatrix_inverse ?
                         //M.multiplyMatrices(R1, R2);
-                        //M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));
-    
+                        //M.multiplyMatrices(A1.multiplyMatrices(objMatrixWorld_inv, T), A2.multiplyMatrices(T0_inv, self.initialMeshMatrix));*/
+                        
+                        M.multiplyMatrices(T, T0_inv);
+
                         for(var n = 0; n < 16; n++) {
                             Mf.elements[n] += M.elements[n] * weight;
                         }
@@ -399,16 +415,7 @@ var InteractiveSkeleton = function(object) {
 
         self.boneControls = boneControls;
 
-        /*
-        for(var s in self.boneArray) {
-            for(var c in self.boneArray[s]) {
-                self.boneArray[s][c].updateMatrixWorld(true);
-            } 
-        }*/
-
-        var A1 = new THREE.Matrix4();
-        var A2 = new THREE.Matrix4();
-        var M = new THREE.Matrix4();
+        self.updateReprMatrixWorld();
         
         self.updateGeometry();
 
