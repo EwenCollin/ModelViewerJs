@@ -341,6 +341,14 @@ var InteractiveSkeleton = function(object) {
 
             var boneMatrix = self.recalculateMatrix(self.reprBoneMatrix[s], self.reprBoneIndex[s]);
 
+
+            var reprBoneMatrixWorld = self.recalculateMatrix(self.reprBoneMatrix[s], self.reprBoneIndex[s]);
+
+            var threejsBoneMatrixWorld_inv = self.recalculateMatrix(self.threejsBoneMatrix[s], self.threejsBoneIndex[s]);
+            for(var m in threejsBoneMatrixWorld_inv) {
+                threejsBoneMatrixWorld_inv[m].invert();
+            }
+
             for(var Kvertex = 0; Kvertex < vertexCount; Kvertex++) {
                 boneIndex.fromBufferAttribute(vertexIndexAttribute, Kvertex);
                 boneWeight.fromBufferAttribute(boneWeightAttribute, Kvertex);
@@ -355,8 +363,8 @@ var InteractiveSkeleton = function(object) {
 
                     var i = boneIndex.getComponent(Kdependency);
                     if(self.boneArray[s][i]) {
-                        var T = boneMatrix[i];
-                        var T0_inv = self.skeleton[s].boneInverses[i];
+                        var T = reprBoneMatrixWorld[i];
+                        var T0_inv = threejsBoneMatrixWorld_inv[i];
                         var weight = boneWeight.getComponent(Kdependency);
                         /*
                         var T = self.boneArray[s][i].matrix;//self.skeleton[s].bones[i].matrixWorld;
