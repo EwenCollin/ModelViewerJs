@@ -11,7 +11,7 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.selectedObject;
     self.transformControls = new TransformControls(self.camera, self.rendererDomElement);
     self.boneControls = new TransformControls(self.camera, self.rendererDomElement);
-    self.boneControls.setMode("rotate");
+    //self.boneControls.setMode("rotate");
     self.boneControls.addEventListener('dragging-changed', function (event) {
         self.controls.enabled = !event.value;
     });

@@ -110,8 +110,8 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		
 		const box = new THREE.BoxHelper(object, 0xffff00);
 		var radius = box.geometry.boundingSphere.radius;
-		//object.scale.multiplyScalar(120/radius);
-        //object.position.set(self.index*200, 0, 0);
+		object.scale.multiplyScalar(120/radius);
+        object.position.set(self.index*200, 0, 0);
 		object.updateMatrixWorld();
 		self.text = self.generateText(self.filename, object.worldToLocal(new THREE.Vector3(0, 10, 0)).y);
 		object.add(self.text);
@@ -127,7 +127,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		object.attach(boxRaycast);
 		object.attach(box);
 		console.log(box);
-		//box.scale.multiplyScalar(radius/120);
+		box.scale.multiplyScalar(radius/120);
 		box.position.copy(object.position);
 		self.boxHelper = box;
 		self.box = boxRaycast;
