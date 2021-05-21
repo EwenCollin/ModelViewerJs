@@ -35,13 +35,19 @@ var InteractiveSkeleton = function(object) {
     self.transformGroup.matrixAutoUpdate = false;
     self.transformGroupSub = new THREE.Group();
     self.transformGroup.attach(self.transformGroupSub);
+
+    self.rotationAroundGroup = new THREE.Group();
+    self.skeletonMesh.attach(self.rotationAroundGroup);
+    self.rotationAroundGroup.matrixAutoUpdate = false;
+    self.rotationAroundGroupSub = new THREE.Group();
+    self.rotationAroundGroup.attach(self.rotationAroundGroupSub);
     
     self.MODE = {
         MOVE: "move",
         ROTATE: "rotate"
     }
 
-    self.TRANSFORM_MODE = self.MODE.ROTATE;
+    self.TRANSFORM_MODE = self.MODE.MOVE;
     
     
     self.createBoneArrays = function(bones) {
@@ -166,7 +172,6 @@ var InteractiveSkeleton = function(object) {
     }
 
     self.updateRepr = function() {
-        //var reprBoneMatrixGlobal = self.applyMatrixToRoot(self.reprBoneMatrix, self.reprBoneIndex, self.rootJointMatrix);
         var reprBoneMatrixGlobal = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
         for(var i = 0; i < self.boneArray.length; i++) {
             if(self.reprBoneIndex[i] !== -1) self.boneArray[i].matrix.copy(reprBoneMatrixGlobal[i]);
@@ -226,7 +231,6 @@ var InteractiveSkeleton = function(object) {
         var rayResult = self.raycast(mouse, objectsToIntersect, rendererDomElement, camera);
         if(rayResult.length > 0) {
             var selectedObject = rayResult[0].object.parent;
-            
             var globalReprMatrix = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
             self.transformGroup.matrix.copy(globalReprMatrix[self.retrieveReprBoneFromUUID(selectedObject.uuid)]);
             self.transformGroupSub.position.set(0, 0, 0);
@@ -302,12 +306,32 @@ var InteractiveSkeleton = function(object) {
         console.log(uuid, "not found in bones uuid");
     }
 
+    self.jointIsOnlyChild = function(jointIndex) {
+        var parentRefOccurences = 0;
+        for(var j = 0; j < self.reprBoneIndex.length; j++) {
+            if (self.reprBoneIndex[j] === self.reprBoneIndex[jointIndex]) parentRefOccurences++;
+        }
+        return parentRefOccurences <= 1;
+    }
+
     self.applyTransform = function() {
         if(self.selectedBone !== undefined) {
             var transformMatrix = new THREE.Matrix4();
             var boneIndex = self.retrieveReprBoneFromUUID(self.selectedBone.meshUUID);
             transformMatrix.multiplyMatrices(self.transformGroupSub.matrix, self.selectedBone.lastMatrix);
-            self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
+            if(self.TRANSFORM_MODE = self.MODE.ROTATE) {
+                if(!self.jointIsOnlyChild(boneIndex)) {
+                    var selectedJointPosition = new THREE.Vector3().setFromMatrixPosition(self.reprBoneMatrix[boneIndex]);
+                    selectedJointPosition.applyMatrix4(transformMatrix);
+                    self.reprBoneMatrix[boneIndex].setPosition(selectedJointPosition);
+                    self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
+                } else {
+                    var parentIndex = self.reprBoneIndex[boneIndex];
+                    self.reprBoneMatrix[parentIndex].multiply(transformMatrix);
+                }
+            } else {
+                self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
+            }
             self.selectedBone.lastMatrix.copy(self.transformGroupSub.matrix).invert();
         }
     }
