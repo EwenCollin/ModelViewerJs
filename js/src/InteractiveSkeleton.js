@@ -118,7 +118,7 @@ var InteractiveSkeleton = function(object) {
             bone.updateMatrixWorld(true);
     
             var geometry = new THREE.ConeBufferGeometry(1, 1, 4, 1);
-            geometry.rotateX(Math.PI/2);
+            geometry.rotateX(-Math.PI/2);
             geometry.translate(0, 0, 0.5);
             var boneColor = 0xFFFF00;
             if (parseInt(skeletonID) !== 1) {
@@ -174,7 +174,7 @@ var InteractiveSkeleton = function(object) {
     self.updateRepr = function() {
         var reprBoneMatrixGlobal = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
         for(var i = 0; i < self.boneArray.length; i++) {
-            if(self.reprBoneIndex[i] !== -1) self.boneArray[i].matrix.copy(reprBoneMatrixGlobal[i]);
+            self.boneArray[i].matrix.copy(reprBoneMatrixGlobal[i]);
         }
     }
 
@@ -233,6 +233,9 @@ var InteractiveSkeleton = function(object) {
             var selectedObject = rayResult[0].object.parent;
             var globalReprMatrix = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
             self.transformGroup.matrix.copy(globalReprMatrix[self.retrieveReprBoneFromUUID(selectedObject.uuid)]);
+            if(self.TRANSFORM_MODE === self.MODE.ROTATE) {
+                self.transformGroup.matrix.copy(globalReprMatrix[self.reprBoneIndex[self.retrieveReprBoneFromUUID(selectedObject.uuid)]]);
+            }
             self.transformGroupSub.position.set(0, 0, 0);
             self.transformGroupSub.rotation.set(0, 0, 0);
             self.transformGroupSub.scale.set(1, 1, 1);
