@@ -232,9 +232,13 @@ var InteractiveSkeleton = function(object) {
         if(rayResult.length > 0) {
             var selectedObject = rayResult[0].object.parent;
             var globalReprMatrix = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
-            self.transformGroup.matrix.copy(globalReprMatrix[self.retrieveReprBoneFromUUID(selectedObject.uuid)]);
+            var jointIndex = self.retrieveReprBoneFromUUID(selectedObject.uuid);
+            self.transformGroup.matrix.copy(globalReprMatrix[jointIndex]);
             if(self.TRANSFORM_MODE === self.MODE.ROTATE) {
-                self.transformGroup.matrix.copy(globalReprMatrix[self.reprBoneIndex[self.retrieveReprBoneFromUUID(selectedObject.uuid)]]);
+                var parentIndex = self.reprBoneIndex[jointIndex];
+                var isOnlyChild = self.jointIsOnlyChild(jointIndex);
+                console.log("parentIndex", parentIndex, "isOnlyChild", isOnlyChild);
+                if(parentIndex !== -1 && isOnlyChild) self.transformGroup.matrix.copy(globalReprMatrix[parentIndex]);
             }
             self.transformGroupSub.position.set(0, 0, 0);
             self.transformGroupSub.rotation.set(0, 0, 0);
@@ -323,14 +327,14 @@ var InteractiveSkeleton = function(object) {
             var boneIndex = self.retrieveReprBoneFromUUID(self.selectedBone.meshUUID);
             transformMatrix.multiplyMatrices(self.transformGroupSub.matrix, self.selectedBone.lastMatrix);
             if(self.TRANSFORM_MODE = self.MODE.ROTATE) {
+                var parentIndex = self.reprBoneIndex[boneIndex];
                 if(!self.jointIsOnlyChild(boneIndex)) {
-                    var selectedJointPosition = new THREE.Vector3().setFromMatrixPosition(self.reprBoneMatrix[boneIndex]);
-                    selectedJointPosition.applyMatrix4(transformMatrix);
-                    self.reprBoneMatrix[boneIndex].setPosition(selectedJointPosition);
-                    self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
+                    var oldJointMatrix = self.reprBoneMatrix[boneIndex].clone();
+                    var updateMatrix = new THREE.Matrix4().multiplyMatrices(transformMatrix, oldJointMatrix);
+                    self.reprBoneMatrix[boneIndex].multiply(oldJointMatrix.invert().multiply(updateMatrix));
                 } else {
-                    var parentIndex = self.reprBoneIndex[boneIndex];
-                    self.reprBoneMatrix[parentIndex].multiply(transformMatrix);
+                    if(parentIndex !== -1) self.reprBoneMatrix[parentIndex].multiply(transformMatrix);
+                    else self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
                 }
             } else {
                 self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
