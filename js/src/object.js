@@ -75,6 +75,10 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.interactiveSkeleton.select(mouse, rendererDomElement, self.camera);
 	}
 
+	self.onAfterInteraction = function(mouse) {
+		self.interactiveSkeleton.onAfterInteraction(mouse);
+	}
+
     self.rescale = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
         else var object = self.mesh;

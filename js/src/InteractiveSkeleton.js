@@ -172,9 +172,53 @@ var InteractiveSkeleton = function(object) {
     }
 
     self.updateRepr = function() {
+
         var reprBoneMatrixGlobal = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
         for(var i = 0; i < self.boneArray.length; i++) {
             self.boneArray[i].matrix.copy(reprBoneMatrixGlobal[i]);
+        }
+        
+        var updateBoneMesh_depr = function(vTo, vFrom, bone) {
+            var boneMesh = bone.children[0];
+
+            boneMesh.position.copy(new THREE.Vector3().setFromMatrixPosition(vFrom));
+            boneMesh.updateMatrixWorld(true);
+            var targetPos = new THREE.Vector3().setFromMatrixPosition(vTo);
+            var eyePos = new THREE.Vector3().setFromMatrixPosition(vFrom);
+            boneMesh.up = new THREE.Vector3(0, 0, 1);
+            boneMesh.lookAt(targetPos);
+            boneMesh.scale.set(2.25, 2.25, eyePos.distanceTo(targetPos));
+            //if(vTo.equals(vFrom)) boneMesh.scale.set(2.25, 2.25, 2.25);
+    
+            bone.updateWorldMatrix( true, false );
+            boneMesh.updateMatrix();
+            //boneMesh.applyMatrix4(bone.matrixWorld.clone().invert());   
+        }
+        var updateBoneMesh = function(vFrom, vTo, bone) {
+            var boneMesh = bone.children[0];
+
+            boneMesh.position.set(0, 0, 0);
+            var targetPos = new THREE.Vector3().setFromMatrixPosition(vFrom);
+            var eyePos = boneMesh.position.clone();
+            boneMesh.up = new THREE.Vector3(0, 0, 1);
+            boneMesh.updateMatrix();
+            boneMesh.lookAt(targetPos);
+            //boneMesh.scale.set(0.25, 0.25, eyePos.distanceTo(targetPos));
+            //if(vTo.equals(vFrom)) boneMesh.scale.set(2.25, 2.25, 2.25);
+    
+            //bone.updateWorldMatrix( true, false );
+            //boneMesh.updateMatrix();
+            //boneMesh.applyMatrix4(bone.matrixWorld.clone());   
+        }
+        
+        var jointGlobalMatrix = self.reprBoneMatrix;//self.recalculateMatrix(jointGlobalMatrix, self.reprBoneIndex);
+        for(var i = 0; i < jointGlobalMatrix.length; i++) {
+            if(self.reprBoneIndex[i] === -1) updateBoneMesh(jointGlobalMatrix[i], jointGlobalMatrix[i], self.boneArray[i]);
+            for(var j = 0; j < jointGlobalMatrix.length; j++) {
+                if(self.reprBoneIndex[i] === j) {
+                    updateBoneMesh(jointGlobalMatrix[i], jointGlobalMatrix[j], self.boneArray[i]);
+                }
+            }
         }
     }
 
@@ -231,23 +275,27 @@ var InteractiveSkeleton = function(object) {
         var rayResult = self.raycast(mouse, objectsToIntersect, rendererDomElement, camera);
         if(rayResult.length > 0) {
             var selectedObject = rayResult[0].object.parent;
-            var globalReprMatrix = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
-            var jointIndex = self.retrieveReprBoneFromUUID(selectedObject.uuid);
-            self.transformGroup.matrix.copy(globalReprMatrix[jointIndex]);
-            if(self.TRANSFORM_MODE === self.MODE.ROTATE) {
-                var parentIndex = self.reprBoneIndex[jointIndex];
-                var isOnlyChild = self.jointIsOnlyChild(jointIndex);
-                console.log("parentIndex", parentIndex, "isOnlyChild", isOnlyChild);
-                if(parentIndex !== -1 && isOnlyChild) self.transformGroup.matrix.copy(globalReprMatrix[parentIndex]);
-            }
-            self.transformGroupSub.position.set(0, 0, 0);
-            self.transformGroupSub.rotation.set(0, 0, 0);
-            self.transformGroupSub.scale.set(1, 1, 1);
-            self.transformGroupSub.updateMatrix();
-            
-            self.boneControls.attach(self.transformGroupSub);
-            self.selectedBone = {meshUUID: selectedObject.uuid, lastMatrix: self.transformGroupSub.matrix.clone().invert()};
+            self.updateTransformSelection(selectedObject);
         }
+    }
+
+    self.updateTransformSelection = function(selectedObject) {
+        var globalReprMatrix = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
+        var jointIndex = self.retrieveReprBoneFromUUID(selectedObject.uuid);
+        self.transformGroup.matrix.copy(globalReprMatrix[jointIndex]);
+        if(self.TRANSFORM_MODE === self.MODE.ROTATE) {
+            var parentIndex = self.reprBoneIndex[jointIndex];
+            var isOnlyChild = self.jointIsOnlyChild(jointIndex);
+            console.log("parentIndex", parentIndex, "isOnlyChild", isOnlyChild);
+            self.transformGroup.matrix.copy(globalReprMatrix[parentIndex]);
+        }
+        self.transformGroupSub.position.set(0, 0, 0);
+        self.transformGroupSub.rotation.set(0, 0, 0);
+        self.transformGroupSub.scale.set(1, 1, 1);
+        self.transformGroupSub.updateMatrix();
+        
+        self.boneControls.attach(self.transformGroupSub);
+        self.selectedBone = {meshUUID: selectedObject.uuid, lastMatrix: self.transformGroupSub.matrix.clone().invert()};
     }
 
     self.updateGeometry = function() {
@@ -331,7 +379,9 @@ var InteractiveSkeleton = function(object) {
                 if(!self.jointIsOnlyChild(boneIndex)) {
                     var oldJointMatrix = self.reprBoneMatrix[boneIndex].clone();
                     var updateMatrix = new THREE.Matrix4().multiplyMatrices(transformMatrix, oldJointMatrix);
-                    self.reprBoneMatrix[boneIndex].multiply(oldJointMatrix.invert().multiply(updateMatrix));
+                    oldJointMatrix.invert();
+                    var finalTransformMatrix = new THREE.Matrix4().multiplyMatrices(updateMatrix, oldJointMatrix);
+                    self.reprBoneMatrix[boneIndex].copy(new THREE.Matrix4().multiplyMatrices(transformMatrix, self.reprBoneMatrix[boneIndex]));
                 } else {
                     if(parentIndex !== -1) self.reprBoneMatrix[parentIndex].multiply(transformMatrix);
                     else self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
@@ -341,6 +391,10 @@ var InteractiveSkeleton = function(object) {
             }
             self.selectedBone.lastMatrix.copy(self.transformGroupSub.matrix).invert();
         }
+    }
+
+    self.onAfterInteraction = function(mouse) {
+        self.updateTransformSelection(self.boneArray[boneIndex]);
     }
 
     self.tick = function(boneControls) {

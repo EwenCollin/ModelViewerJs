@@ -123,6 +123,10 @@ function onClick(event) {
 	console.log("hello");
 }
 
+function onMouseUp(event) {
+	interaction.onAfterInteraction(new THREE.Vector2(event.clientX, event.clientY));
+}
+
 function onDrop(event) {
 	console.log(event);
 	event.preventDefault();

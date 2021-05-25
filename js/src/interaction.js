@@ -12,6 +12,8 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.transformControls = new TransformControls(self.camera, self.rendererDomElement);
     self.boneControls = new TransformControls(self.camera, self.rendererDomElement);
     self.boneControls.setMode("rotate");
+    self.boneControls.setSpace("local");
+    self.boneControls.setSize(0.5);
     self.boneControls.addEventListener('dragging-changed', function (event) {
         self.controls.enabled = !event.value;
     });
@@ -70,7 +72,12 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
                 self.selectedObject.select(mouse, self.rendererDomElement);
             }
         }
+    }
 
+    self.onAfterInteraction = function(mouse) {
+        if(self.selectedObject !== undefined) {
+            self.selectedObject.onAfterInteraction(mouse);
+        }
     }
 }
 
