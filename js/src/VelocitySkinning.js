@@ -111,7 +111,7 @@ function computeVelocitySkinningDeformation(model) {
                 const w_skinning = weight_dependency[k_dep];
                 const p_vertex = model["vertex_skinning"][idx_vertex];
 
-                const w_flappy = 0.4*1;//model["velocity_skinning"]["flappy_weight"][idx_vertex]*model["param"]["flappy"];
+                const w_flappy = 0.4*model["param"]["flappy"];//model["velocity_skinning"]["flappy_weight"][idx_vertex];
                 if(Math.abs(w_flappy)>0.01){
                     deformation_flappy.copy(linear_speed);
                     deformation_flappy.multiplyScalar(-w_flappy);
@@ -122,7 +122,7 @@ function computeVelocitySkinningDeformation(model) {
 
 
                 // Squashy
-                const squash_factor = 0.2*linear_speed_norm*1;//sceneElements.param["Squashy"]*model["param"]["squashy"];
+                const squash_factor = 0.2*linear_speed_norm*model["param"]["squashy"];//sceneElements.param["Squashy"];
                 
                 if( Math.abs(squash_factor) >0.01){
                     const elongation_scaling = 1.0+squash_factor;
@@ -183,7 +183,7 @@ function computeVelocitySkinningDeformation(model) {
                 rotation_center.multiplyScalar( u_joint_vertex.dot(un_angular_speed)  );
                 rotation_center.add(p_joint);
 
-                const w_flappy = 1;//model["velocity_skinning"]["flappy_weight"][idx_vertex]*model["param"]["flappy"];
+                const w_flappy = 1*model["param"]["flappy"];//model["velocity_skinning"]["flappy_weight"][idx_vertex];
 
                 if(Math.abs(w_flappy)>0.01){
                     const angle = - w_flappy * vertex_speed_norm * 0.4 * 1;//sceneElements.param['Flappy'];
@@ -200,7 +200,7 @@ function computeVelocitySkinningDeformation(model) {
                 
 
                 // Squashy
-                const squash_factor = 0.2*vertex_speed_norm*1;//sceneElements.param["Squashy"]*model["param"]["squashy"];
+                const squash_factor = 0.2*vertex_speed_norm*model["param"]["squashy"];//sceneElements.param["Squashy"];
                 if( Math.abs(squash_factor) >0.01){
                     const elongation_scaling = 1.0+squash_factor;
                     const squeeze_scaling = 1/(1+squash_factor);
