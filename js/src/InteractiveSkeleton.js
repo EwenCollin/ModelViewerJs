@@ -202,17 +202,50 @@ var InteractiveSkeleton = function(object) {
 				}
 			}
         });
+
+        var getRoot = function(child) {
+            if(child.parent && child.parent.isBone) return getRoot(child.parent);
+            return child;
+        }
+        var rootJoint = getRoot(self.skeleton[0].bones[0]);
+
+        var retrieveSkeletonIndexFromBoneObject = function(skeletons, bone) {
+            for(var s in skeletons) {
+                for(var b in skeletons[s].bones) {
+                    if(skeletons[s].bones[b].uuid === bone.uuid) return {"s": s, "b": b, "NotIndexed": false};
+                }
+            }
+            return {"NotIndexed": true};
+        }
+
         var meshJoints = [];
         var meshJointsIndex = 0;
         for(var s = 0; s < self.skeleton.length; s++) {
             self.initialPositions.push(self.geometryAttributes[s].position.clone());
             self.globalJointIndex.push([]);
+            /*
+            for(var j = 0; j < self.skeleton[s].bones.length; j++) {
+                //meshJoints.push(self.skeleton[s].bones[j]);
+                self.globalJointIndex[s].push(null);
+                meshJointsIndex++;
+            }*/
+            
             for(var j = 0; j < self.skeleton[s].bones.length; j++) {
                 meshJoints.push(self.skeleton[s].bones[j]);
                 self.globalJointIndex[s].push(meshJointsIndex);
                 meshJointsIndex++;
             }
         }
+        /*
+        rootJoint.traverse(function(child) {
+            if(child.isBone) {
+                meshJoints.push(child);
+                var boneIndices = retrieveSkeletonIndexFromBoneObject(self.skeleton, child);
+                if(!boneIndices["NotIndexed"]) self.globalJointIndex[boneIndices["s"]][boneIndices["b"]] = meshJointsIndex;
+                meshJointsIndex++;
+            }
+        });*/
+
         var threejsJointsData = self.createBoneArrays(meshJoints);
         self.threejsBoneIndex = threejsJointsData["boneIndex"];
         self.threejsBoneMatrix = threejsJointsData["boneMatrix"];
@@ -220,11 +253,6 @@ var InteractiveSkeleton = function(object) {
         var reprJointsData = self.createBoneArrays(meshJoints);
         self.reprBoneIndex = reprJointsData["boneIndex"];
         self.reprBoneMatrix = reprJointsData["boneMatrix"];
-        var getRoot = function(child) {
-            if(child.parent && child.parent.isBone) return getRoot(child.parent);
-            return child;
-        }
-        var rootJoint = getRoot(self.skeleton[0].bones[0]);
         self.rootJointMatrix = rootJoint.parent.matrixWorld.clone();
         self.createBoneRepr(self.reprBoneMatrix, self.reprBoneIndex);
         
@@ -511,7 +539,7 @@ var InteractiveSkeleton = function(object) {
                 //if(!oldRotation.equals(model["skeleton_current"]["rotation_local"][i])) console.log("joint:", i, "different", model["skeleton_current"]["rotation_local"][i]);
             }
         }*/
-        
+        /*
         var computeLocalRotations = function(jointGlobalMatrix) {
             var finalJointsQuaternions = [];
             for(var i = 0; i < jointGlobalMatrix.length; i++) {
@@ -523,18 +551,18 @@ var InteractiveSkeleton = function(object) {
                 //if(!oldRotation.equals(model["skeleton_current"]["rotation_local"][i])) console.log("joint:", i, "different", model["skeleton_current"]["rotation_local"][i]);
             }
             return finalJointsQuaternions;
-        }
-        /*
+        }*/
+        
         var computeLocalRotations = function(jointGlobalMatrix) {
             var localQuaternions = [];
             for(var i = 0; i < jointGlobalMatrix.length; i++) {
                 var currentQuaternion = new THREE.Quaternion();
                 self.reprBoneMatrix[i].decompose(new THREE.Vector3(), currentQuaternion, new THREE.Vector3());
-                currentQuaternion.normalize();
+                //currentQuaternion.normalize();
                 localQuaternions.push(currentQuaternion);
             }
             return localQuaternions;
-        }*/
+        }
         
         var computeGlobalRotations = function(boneIndex, localJointQuaternion) {
             var finalJointsQuaternions = [];
@@ -556,58 +584,71 @@ var InteractiveSkeleton = function(object) {
             return finalJointsQuaternions;
         }
 
+        var multiplyVector3ByMatrix4 = function(vec, m) {
+            var e = m.elements;
+            return vec.set(
+                vec.x*e[0] + vec.y*e[4] + vec.z*e[8],
+                vec.x*e[1] + vec.y*e[5] + vec.z*e[9],
+                vec.x*e[2] + vec.y*e[6] + vec.z*e[10]
+            );
+        }
+
+        /*
         var getTransformationAngularVelocity = function(newMatrix, oldMatrix, globalParentMatrix) {
             var transform = new THREE.Matrix4().multiplyMatrices(newMatrix, oldMatrix.invert());
             transform.premultiply(globalParentMatrix);
             return new THREE.Vector3( - transform.elements[9], transform.elements[8], - transform.elements[4]);
-        }
+        }*/
 
         //Construct model
         for(var skeletonIdx in self.skeleton) {
             var model = self.velocity_skinning_data[skeletonIdx];
             var globalJointMatrices = self.recalculateMatrix(self.reprBoneMatrix, self.reprBoneIndex);
             const R_parent = new THREE.Quaternion(0,0,0,1);
+            const M_parent = new THREE.Matrix4();
+            var localRotations = computeLocalRotations(self.reprBoneMatrix);
+            var globalRotations = computeGlobalRotations(self.reprBoneIndex, localRotations);
             for(var j = 0; j < self.reprBoneMatrix.length; j++) {
 
                 const parent = self.reprBoneIndex[j];
-                if (parent !== -1) var globalParentMatrix = globalJointMatrices[parent];
-                else var globalParentMatrix = new THREE.Matrix4();
+                if (parent !== -1) {
+                    R_parent.copy(globalRotations[parent]);
+                    M_parent.copy(globalJointMatrices[parent]);
+                }
+
                 var alpha = 0.80;
                 model["velocity_skinning"]["speed_tracker"][j].current_speed.setFromMatrixPosition(self.reprBoneMatrix[j]).sub(model["skeleton_current"]["position_local"][j]).divideScalar(1/60.0).multiplyScalar(1-alpha);
                 model["velocity_skinning"]["speed_tracker"][j].avg_speed.multiplyScalar(alpha).add(model["velocity_skinning"]["speed_tracker"][j].current_speed);
 
                 var q0 = model["velocity_skinning"]["rotation_tracker"][j].last_position.clone();
 
-                var localRotations = computeLocalRotations(globalJointMatrices);
-                var globalRotations = computeGlobalRotations(self.reprBoneIndex, localRotations);
-
-                var new_rotation_speed = new THREE.Quaternion().multiplyQuaternions(localRotations[j], q0.conjugate());
-
-                //if(j==6) console.log("rotation current quaternion : ", model["skeleton_current"]["rotation_local"][j], "rotation last quaternion :", q0);
+                
+                var new_rotation_speed = new THREE.Quaternion().copy(localRotations[j]);
+                if(new_rotation_speed.dot(q0) < 0) new_rotation_speed.set(- new_rotation_speed.x, - new_rotation_speed.y, - new_rotation_speed.z, - new_rotation_speed.w);
+                model["velocity_skinning"]["rotation_tracker"][j].last_position.copy(new_rotation_speed);
+                new_rotation_speed.multiply(q0.conjugate());
 
                 const new_rotation_speed_vec = new THREE.Vector3();
-                //quaternion_to_angular_speed(new_rotation_speed, new_rotation_speed_vec);
-                new_rotation_speed_vec.copy(getTransformationAngularVelocity(self.reprBoneMatrix[j], model["velocity_skinning"]["matrix_tracker"][j], globalParentMatrix)).divideScalar(1/60.0);
-                model["velocity_skinning"]["matrix_tracker"][j].copy(self.reprBoneMatrix[j]).premultiply(globalParentMatrix);
-                //if(j==6) console.log(new_rotation_speed_vec)
-                new_rotation_speed_vec.multiplyScalar(1-alpha);
+                quaternion_to_angular_speed(new_rotation_speed, new_rotation_speed_vec);
+                multiplyVector3ByMatrix4(new_rotation_speed_vec, M_parent).multiplyScalar(1-alpha).divideScalar(1/60.0);
                 
-                //if(!new_rotation_speed_vec.equals(new THREE.Vector3())) console.log("joint:", j, "moving with speed:", new_rotation_speed_vec);
 
                 model["velocity_skinning"]["rotation_tracker"][j].avg_speed.multiplyScalar(alpha);
                 model["velocity_skinning"]["rotation_tracker"][j].avg_speed.add(new_rotation_speed_vec);
 
 
-                model["velocity_skinning"]["rotation_tracker"][j].last_position.copy(localRotations[j]);
 
 
-                if (parent !== -1) R_parent.copy(globalRotations[parent]);
                 model["velocity_skinning"]["speed_tracker"][j].current_speed.copy(model["velocity_skinning"]["speed_tracker"][j].avg_speed).multiplyScalar(1);
                 //model["velocity_skinning"]["speed_tracker"][j].current_speed.applyQuaternion(R_parent);
 
-                //model["velocity_skinning"]["rotation_tracker"][j].current_speed.copy(new_rotation_speed_vec).applyQuaternion(R_parent);
+                
                 model["velocity_skinning"]["rotation_tracker"][j].current_speed.copy(model["velocity_skinning"]["rotation_tracker"][j].avg_speed).multiplyScalar(1);
                 //model["velocity_skinning"]["rotation_tracker"][j].current_speed.applyQuaternion(R_parent);
+
+
+
+                if(j==6) console.log(model["velocity_skinning"]["rotation_tracker"][j].current_speed, R_parent);
                 if(self.selectedBone !== undefined && j == self.selectedBone.index) {
                     var tmp_position = new THREE.Vector3().setFromMatrixPosition(self.angular_velocity_helper.matrix);
                     var scale = model["velocity_skinning"]["rotation_tracker"][j].current_speed.length()*10;
@@ -616,12 +657,10 @@ var InteractiveSkeleton = function(object) {
                     //self.angular_velocity_helper.scale.set(scale, scale, scale);
                 }
 
-                //if(!model["velocity_skinning"]["speed_tracker"][j].current_speed.equals(new THREE.Vector3(0, 0, 0))) console.log("joint:", j, " - speed:", model["velocity_skinning"]["speed_tracker"][j].current_speed);
-
                 model["skeleton_current"]["position_global"][j].setFromMatrixPosition(globalJointMatrices[j]);
                 model["skeleton_current"]["position_local"][j].setFromMatrixPosition(self.reprBoneMatrix[j]);
             }
-            model["skeleton_current"]["rotation_local"] = computeLocalRotations(globalJointMatrices);
+            model["skeleton_current"]["rotation_local"] = computeLocalRotations(self.reprBoneMatrix);
             model["skeleton_current"]["rotation_global"] = computeGlobalRotations(self.reprBoneIndex, model["skeleton_current"]["rotation_local"]);
         }
         computeVelocitySkinningDeformation(model);
