@@ -25,7 +25,7 @@ function computeVelocitySkinningDeformation(model) {
         y*x*(1-c)+z*s, c+y*y*(1-c), y*z*(1-c)-x*s,
         z*x*(1-c)-y*s, z*y*(1-c)+x*s, c+z*z*(1-c));
     }
-    // console.log("model :", model);
+    
     // update centroid 
     //  (this implementation is a simple non-weighted by the are - the full one is in the C++ code)
     const N_joint = model["velocity_skinning"]["vertex_depending_on_joint"].length;
@@ -111,7 +111,7 @@ function computeVelocitySkinningDeformation(model) {
                 const w_skinning = weight_dependency[k_dep];
                 const p_vertex = model["vertex_skinning"][idx_vertex];
 
-                const w_flappy = 0.4*model["param"]["flappy"];//model["velocity_skinning"]["flappy_weight"][idx_vertex];
+                const w_flappy = 0.4*/*model["velocity_skinning"]["flappy_weight"][idx_vertex]**/model["param"]["flappy"];
                 if(Math.abs(w_flappy)>0.01){
                     deformation_flappy.copy(linear_speed);
                     deformation_flappy.multiplyScalar(-w_flappy);
@@ -122,8 +122,7 @@ function computeVelocitySkinningDeformation(model) {
 
 
                 // Squashy
-                const squash_factor = 0.2*linear_speed_norm*model["param"]["squashy"];//sceneElements.param["Squashy"];
-                
+                const squash_factor = 0.2*linear_speed_norm*/*sceneElements.param["Squashy"]**/model["param"]["squashy"];
                 if( Math.abs(squash_factor) >0.01){
                     const elongation_scaling = 1.0+squash_factor;
                     const squeeze_scaling = 1/Math.sqrt(1+squash_factor);
@@ -144,7 +143,6 @@ function computeVelocitySkinningDeformation(model) {
 
 
                     deformation_squashy.multiplyScalar(w_skinning);
-                    //console.log(deformation_squashy);
                     model["velocity_skinning_deformation"][idx_vertex].add(deformation_squashy);
                 }
 
@@ -183,10 +181,10 @@ function computeVelocitySkinningDeformation(model) {
                 rotation_center.multiplyScalar( u_joint_vertex.dot(un_angular_speed)  );
                 rotation_center.add(p_joint);
 
-                const w_flappy = 1*model["param"]["flappy"];//model["velocity_skinning"]["flappy_weight"][idx_vertex];
+                const w_flappy = /*model["velocity_skinning"]["flappy_weight"][idx_vertex]**/model["param"]["flappy"];
 
                 if(Math.abs(w_flappy)>0.01){
-                    const angle = - w_flappy * vertex_speed_norm * 0.4 * 1;//sceneElements.param['Flappy'];
+                    const angle = - w_flappy * vertex_speed_norm * 0.4; // * sceneElements.param['Flappy'];
 
                     deformation_flappy.copy(p_vertex).sub(rotation_center);
                     deformation_flappy.applyAxisAngle(un_angular_speed, angle);
@@ -200,7 +198,7 @@ function computeVelocitySkinningDeformation(model) {
                 
 
                 // Squashy
-                const squash_factor = 0.2*vertex_speed_norm*model["param"]["squashy"];//sceneElements.param["Squashy"];
+                const squash_factor = 0.2*vertex_speed_norm*/*sceneElements.param["Squashy"]**/model["param"]["squashy"];
                 if( Math.abs(squash_factor) >0.01){
                     const elongation_scaling = 1.0+squash_factor;
                     const squeeze_scaling = 1/(1+squash_factor);
@@ -247,7 +245,14 @@ function computeVelocitySkinningDeformation(model) {
                 }
             }
         }
+
     }
+
+    //if(sceneElements.param["Activated"]===true){
+        for(let k=0, N=model["vertex_skinning"].length; k<N; ++k) {
+            model["vertex_velocity_skinning"][k].add(model["velocity_skinning_deformation"][k]);
+        }
+    //}
 }
 
 export {computeVelocitySkinningDeformation};
