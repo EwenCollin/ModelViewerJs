@@ -79,6 +79,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 				if (child.skeleton) {
 					child.updateMatrix();
 					child.updateMatrixWorld();
+					child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
 				}
 			}
 		});
