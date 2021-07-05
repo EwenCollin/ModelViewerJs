@@ -3,20 +3,20 @@ import { TransformControls } from '../jsm/controls/TransformControls.js';
 import { computeVelocitySkinningDeformation } from './VelocitySkinning.js';
 import { VertexMotionHelper } from './VertexMotionHelper.js';
 
-var InteractiveSkeleton = function(skinnedMesh, skeleton) {
+var InteractiveSkeleton = function(object) {
     var self = this;
-    self.skinnedMesh = skinnedMesh;
-    self.skeleton = skeleton;
+    self.object = object;
+    self.mesh = self.object.mesh;
+    if (self.object.filename.endsWith(".gltf") || self.object.filename.endsWith(".glb")) self.mesh = self.object.mesh.scene;
+    self.animations = self.object.animations;
     self.skeletonMesh = new THREE.Group();
-    self.skinnedMesh.attach(self.skeletonMesh);
+    self.mesh.attach(self.skeletonMesh);
     self.skeletonMesh.matrixAutoUpdate = false;
     self.raycaster = new THREE.Raycaster();
     self.boneControls;
     self.boneMap = [];
     self.boneArray = [];
     self.selectedBone;
-
-    self.joints = [];
 
     self.skinnedMesh = [];
     self.skeleton = [];
@@ -197,28 +197,31 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
     }
 
     self.init = function() {
-        self.geometryAttributes = self.skinnedMesh.geometry.attributes;
-        jointArray = [];
+        self.mesh.traverse(function(child) {
+            if ( child.isMesh ) {
+				if (child.skeleton) {
+					console.log(child.skeleton);
+                    self.skeleton.push(child.skeleton);
+                    self.geometryAttributes.push(child.geometry.attributes);
+                    self.skinnedMesh.push(child);
+                    self.boneMap.push({});
+				}
+			}
+        });
 
         var getRoot = function(child) {
             if(child.parent && child.parent.isBone) return getRoot(child.parent);
             return child;
         }
-        var rootJoint = getRoot(self.skeleton.bones[0]);
-        
-        var indexJointRecursive = function(parentJoint) {
-            for(var c in parentJoint.children) {
-                jointArray.push(parentJoint.children[c]);
-                indexJointRecursive(parentJoint.children[c]);
-            }
-        }
-        indexJointRecursive(rootJoint);
+        var rootJoint = getRoot(self.skeleton[0].bones[0]);
 
-        var retrieveSkeletonIndexFromBoneObject = function(skeleton, bone) {
-            for(var b in skeleton.bones) {
-                if(skeleton.bones[b].uuid === bone.uuid) return {"index": b};
+        var retrieveSkeletonIndexFromBoneObject = function(skeletons, bone) {
+            for(var s in skeletons) {
+                for(var b in skeletons[s].bones) {
+                    if(skeletons[s].bones[b].uuid === bone.uuid) return {"s": s, "b": b, "NotIndexed": false};
+                }
             }
-            return {"index": -1};
+            return {"NotIndexed": true};
         }
 
         var meshJoints = [];
@@ -226,6 +229,12 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
         for(var s = 0; s < self.skeleton.length; s++) {
             self.initialPositions.push(self.geometryAttributes[s].position.clone());
             self.globalJointIndex.push([]);
+            /*
+            for(var j = 0; j < self.skeleton[s].bones.length; j++) {
+                //meshJoints.push(self.skeleton[s].bones[j]);
+                self.globalJointIndex[s].push(null);
+                meshJointsIndex++;
+            }*/
             
             for(var j = 0; j < self.skeleton[s].bones.length; j++) {
                 meshJoints.push(self.skeleton[s].bones[j]);
@@ -233,6 +242,15 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
                 meshJointsIndex++;
             }
         }
+        /*
+        rootJoint.traverse(function(child) {
+            if(child.isBone) {
+                meshJoints.push(child);
+                var boneIndices = retrieveSkeletonIndexFromBoneObject(self.skeleton, child);
+                if(!boneIndices["NotIndexed"]) self.globalJointIndex[boneIndices["s"]][boneIndices["b"]] = meshJointsIndex;
+                meshJointsIndex++;
+            }
+        });*/
 
         var threejsJointsData = self.createBoneArrays(meshJoints);
         self.threejsBoneIndex = threejsJointsData["boneIndex"];
