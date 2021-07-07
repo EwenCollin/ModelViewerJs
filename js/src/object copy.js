@@ -16,7 +16,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 	self.boxHelper;
 	self.box;
 	self.animations;
-	self.interactiveSkeletons = [];
+	self.interactiveSkeleton;
 
 	self.getTransformGroup = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
@@ -79,8 +79,6 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 				if (child.skeleton) {
 					child.updateMatrix();
 					child.updateMatrixWorld();
-					console.log(child);
-					self.interactiveSkeletons.push(new InteractiveSkeleton(child, child.skeleton));
 					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
 				}
 			}
@@ -111,13 +109,12 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.box = boxRaycast;
 		self.box.visible = false;
 		self.boxHelper.visible = false;
+		self.interactiveSkeleton = new InteractiveSkeleton(self);
 		self.setPosition(new THREE.Vector3(0, 0, index*200));
     }
 
     self.tick = function(dt, boneControls) {
-		for(var skeleton in self.interactiveSkeletons) {
-			self.interactiveSkeletons[skeleton].tick(boneControls);
-		}
+		self.interactiveSkeleton.tick(boneControls);
 		if (self.animationMixer) self.animationMixer.update(dt);
 		self.text.rotation.copy(camera.rotation);
 		self.boxHelper.visible = self.selected;
