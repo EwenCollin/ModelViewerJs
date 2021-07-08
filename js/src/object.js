@@ -124,7 +124,9 @@ var Object = function(parent, mesh, filename, index, font, camera) {
     }
 
 	self.select = function(mouse, rendererDomElement) {
-		self.interactiveSkeleton.select(mouse, rendererDomElement, self.camera);
+		for(var is in self.interactiveSkeletons) {
+			self.interactiveSkeletons[is].select(mouse, rendererDomElement, self.camera);
+		}
 	}
 
 	self.onAfterInteraction = function(mouse) {
