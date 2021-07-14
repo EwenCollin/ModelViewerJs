@@ -3,6 +3,7 @@ import * as THREE from '../build/three.module.js';
 import { MapControls } from './jsm/controls/OrbitControls.js';
 import { FBXLoader } from './jsm/loaders/FBXLoader.js';
 import { Interaction } from './src/interaction.js';
+import { UserInterface } from './src/UserInterface.js';
 
 import {Loader} from './src/loader.js';
 
@@ -22,6 +23,8 @@ let newObjects = [];
 
 var loader;
 var interaction;
+
+var userInterface = new UserInterface(document.getElementById("settings-panel"));
 
 init();
 animate();
@@ -116,6 +119,7 @@ function init() {
 	window.addEventListener( 'drop', onDrop, true );
 
 	renderer.domElement.addEventListener('click', onClick, false);
+	userInterface.init();
 }
 
 function onClick(event) {
