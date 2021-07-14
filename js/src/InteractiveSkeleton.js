@@ -3,12 +3,18 @@ import { TransformControls } from '../jsm/controls/TransformControls.js';
 import { computeVelocitySkinningDeformation } from './VelocitySkinning.js';
 import { VertexMotionHelper } from './VertexMotionHelper.js';
 
-var InteractiveSkeleton = function(skinnedMesh, skeleton) {
+var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
     var self = this;
     self.skinnedMesh = skinnedMesh;
     self.skeleton = skeleton;
+    self.rootGroup = rootGroup;
     self.skeletonMesh = new THREE.Group();
-    self.skinnedMesh.attach(self.skeletonMesh);
+    var getRoot = function(child) {
+        if(child.parent && child.parent.isBone) return getRoot(child.parent);
+        return child;
+    }
+    var rootJoint = getRoot(self.skeleton.bones[0]);
+    rootJoint.parent.add(self.skeletonMesh);
     self.skeletonMesh.matrixAutoUpdate = false;
     self.raycaster = new THREE.Raycaster();
     self.boneControls;
@@ -47,8 +53,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
     }
 
     self.TRANSFORM_MODE = self.MODE.MOVE;
-    self.skeletonWidth = 2.5;
-    self.helperSize = 0.025;
+    self.prescale = 2.5;
+    self.scaleUnit = 2.5;
 
     self.velocity_skinning_data = [];
     
@@ -58,7 +64,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
         "center_of_mass": []
     }
     self.helpersGroup = new THREE.Group();
-    self.skeletonMesh.attach(self.helpersGroup);
+    self.skeletonMesh.add(self.helpersGroup);
     /*
     self.angular_velocity_helper = new THREE.Mesh(new THREE.CylinderBufferGeometry( 1, 1, 5, 32 ), new THREE.MeshStandardMaterial({color: 0xFF0000}));
     self.angular_velocity_helper.geometry.translate(0, 2.5, 0);
@@ -149,7 +155,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
         }
         self.skeletonMesh.updateMatrixWorld(true);
         var skeletonMeshMatrix = self.skeletonMesh.matrixWorld.clone();
-        var scale = new THREE.Vector3(0, self.skeletonWidth + 1, 0).applyMatrix4(skeletonMeshMatrix.clone().invert()).distanceTo(new THREE.Vector3(0, 1, 0).applyMatrix4(skeletonMeshMatrix.clone().invert()));
+        var scale = self.scaleUnit;
         for(var i = 0; i < self.joints.length; i++) {
             if(self.joints[i].parentIndex === -1) updateBoneMesh(self.joints[i].matrixWorld, self.joints[i].matrixWorld, self.joints[i].jointGroup, scale);
             for(var j = 0; j < self.joints.length; j++) {
@@ -211,9 +217,20 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
             }
         }
         
-
         setParentIndexToJointObjects(jointObjects);
+
+        var rootJointRoot = rootJoint;
+        while(rootJointRoot.parent.uuid !== self.rootGroup.uuid) {rootJointRoot = rootJointRoot.parent;}
+        console.log("rootJointRoot", rootJointRoot);
+        if (rootJointRoot.parent.uuid == self.rootGroup.uuid) rootJointRoot = self.skinnedMesh.parent;
+        console.log("rootJointRoot", rootJointRoot);
+        rootJoint.parent.updateMatrixWorld(true);
         self.rootJointMatrix = rootJoint.parent.matrixWorld.clone();
+        var skeletonMeshMatrix = new THREE.Matrix4();
+        rootJointRoot.updateMatrixWorld(true);
+        self.rootGroup.updateWorldMatrix(true, false);
+        //self.skeletonMesh.matrix.multiplyMatrices(self.rootGroup.matrixWorld.clone().invert(), self.rootJointMatrix);
+
         self.createBoneRepr(jointObjects);
         
         self.joints = jointObjects;
@@ -236,10 +253,10 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
                 bp = -1;
             }
             self.parentJointIndices.push(bp);
-            self.helpers["center_of_mass"].push(new THREE.Mesh(new THREE.SphereBufferGeometry(self.helperSize), new THREE.MeshBasicMaterial({color: 0xFFFF00})));
+            self.helpers["center_of_mass"].push(new THREE.Mesh(new THREE.SphereBufferGeometry(self.scaleUnit), new THREE.MeshBasicMaterial({color: 0xFFFF00})));
             self.helpersGroup.attach(self.helpers["center_of_mass"][b]);
             self.helpers["center_of_mass"][b].material.depthTest = false;
-            self.helpers["angular_speed"].push(new THREE.Mesh(new THREE.CylinderBufferGeometry(self.helperSize, self.helperSize, self.helperSize), new THREE.MeshBasicMaterial({color: 0x00FF00})));
+            self.helpers["angular_speed"].push(new THREE.Mesh(new THREE.CylinderBufferGeometry(self.scaleUnit, self.scaleUnit, self.scaleUnit), new THREE.MeshBasicMaterial({color: 0x00FF00})));
             self.helpersGroup.attach(self.helpers["angular_speed"][b]);
             self.helpers["angular_speed"][b].material.depthTest = false;
         }
@@ -248,8 +265,6 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
         
         //self.skeletonMesh.attach(self.angular_velocity_helper);
         console.log(self.boneToJointIndices);
-        var skeletonMeshMatrix = new THREE.Matrix4();
-        self.skeletonMesh.matrix.copy(skeletonMeshMatrix.multiplyMatrices(self.rootJointMatrix, self.skinnedMesh.matrixWorld.clone().invert()));
     }
 
     self.raycast = function(mouse, objects, rendererDomElement, camera) {
@@ -660,6 +675,12 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
         //self.updateTransformSelection(self.boneArray[boneIndex]);
     }
 
+    self.updateScaleUnit = function() {
+        self.skeletonMesh.updateMatrixWorld(true);
+        var skeletonMeshMatrix = self.skeletonMesh.matrixWorld.clone();
+        self.scaleUnit = new THREE.Vector3(0, self.prescale + 1, 0).applyMatrix4(skeletonMeshMatrix.clone().invert()).distanceTo(new THREE.Vector3(0, 1, 0).applyMatrix4(skeletonMeshMatrix.clone().invert()));
+    }
+
     self.tick = function(boneControls) {
         self.setSkeletonVisibility(true);
         self.boneControls = boneControls;
@@ -669,7 +690,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton) {
 
         self.updateGeometry();
         self.updateGeometryVS();
-
+        self.updateScaleUnit();
     }
     self.init();
 }

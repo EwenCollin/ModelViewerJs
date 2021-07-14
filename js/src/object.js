@@ -73,18 +73,6 @@ var Object = function(parent, mesh, filename, index, font, camera) {
             }
         }
 		object.updateMatrixWorld();
-		object.traverse( function ( child ) {
-			if ( child.isMesh ) {
-				child.material.metalness = child.material.metalness/2.5;
-				if (child.skeleton) {
-					child.updateMatrix();
-					child.updateMatrixWorld();
-					console.log(child);
-					self.interactiveSkeletons.push(new InteractiveSkeleton(child, child.skeleton));
-					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
-				}
-			}
-		});
 		
 		const box = new THREE.BoxHelper(object, 0xffff00);
 		var radius = box.geometry.boundingSphere.radius;
@@ -112,6 +100,18 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.box.visible = false;
 		self.boxHelper.visible = false;
 		self.setPosition(new THREE.Vector3(0, 0, index*200));
+		object.traverse( function ( child ) {
+			if ( child.isMesh ) {
+				child.material.metalness = child.material.metalness/2.5;
+				if (child.skeleton) {
+					child.updateMatrix();
+					child.updateMatrixWorld();
+					console.log(child);
+					self.interactiveSkeletons.push(new InteractiveSkeleton(child, child.skeleton, object));
+					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
+				}
+			}
+		});
     }
 
     self.tick = function(dt, boneControls) {
