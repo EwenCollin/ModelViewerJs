@@ -9,7 +9,7 @@ var UserInterface = function(domElement, interaction) {
     self.currentInteractiveSkeleton = null;
 
     self.dom = {}
-    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty"]
+    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value"]
 
     self.init = function() {
         for(var d in self.domList) {
@@ -98,17 +98,20 @@ var UserInterface = function(domElement, interaction) {
     }
 
     self.setSquashingPower = function(value) {
+        self.dom["vs-squashy-power-value"].innerText = value;
         if(self.currentInteractiveSkeleton != null) {
             self.currentInteractiveSkeleton.PARAMS.weights.squashy = value;
         }
     }
 
     self.setFlappingPower = function(value) {
+        self.dom["vs-flappy-power-value"].innerText = value;
         if(self.currentInteractiveSkeleton != null) {
             self.currentInteractiveSkeleton.PARAMS.weights.flappy = value;
         }
     }
     self.setSpeedAlpha = function(value) {
+        self.dom["vs-alpha-value"].innerText = value;
         if(self.currentInteractiveSkeleton != null) {
             self.currentInteractiveSkeleton.PARAMS.alpha = value;
         }
