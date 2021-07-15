@@ -1,13 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title>City builder game</title>
-  <link rel="stylesheet" href="./style.css">
-  <style>
-	body { margin: 0; padding: 0;}
-  </style>
-  <script id="fragmentShader" type="x-shader/x-fragment">
+    <meta charset="UTF-8">
+    <title>City builder game</title>
+    <link rel="stylesheet" href="./style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <script id="fragmentShader" type="x-shader/x-fragment">
     #version 330 core
 
     in struct fragment_data
@@ -80,7 +84,7 @@
 
   </script>
 
-  <script id="vertexShader" type="x-shader/x-vertex">
+    <script id="vertexShader" type="x-shader/x-vertex">
 
     #version 330 core
 
@@ -452,39 +456,73 @@ void main()
 
   </script>
 </head>
+
 <body>
-<!-- partial -->
-  <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.module.js' type="module"></script>
-  <script type="module" src="./js/main.js"></script>
-  <div id="container">
-    <div id="settings-panel">
-        <div class="settings-tab">
-            <div class="tab-title">
-                Skeleton
+    <!-- partial -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.module.js' type="module"></script>
+    <script type="module" src="./js/main.js"></script>
+    <div id="container">
+        <div id="settings-panel">
+            <div class="settings-tab">
+                <div class="tab-title">
+                    Skeleton
+                </div>
+                <div class="tab-content">
+                    <label class="checkbox-container" id="current-skeleton-display">Display
+                        <input type="checkbox">
+                        <span class="checkmark"></span>
+                    </label>
+                    Helpers
+                    <label class="checkbox-container" id="helper-angular-velocity">Angular velocity
+                        <input type="checkbox">
+                        <span class="checkmark"></span>
+                    </label>
+                    <label class="checkbox-container" id="helper-centroid">Centroids
+                        <input type="checkbox">
+                        <span class="checkmark"></span>
+                    </label>
+                    Transform
+                    <label class="radio-container">Local
+                        <input id="skeleton-transform-local" type="radio" checked="checked" name="skeleton-transform">
+                        <span class="radio-checkmark"></span>
+                    </label>
+                    <label class="radio-container">Global
+                        <input id="skeleton-transform-global" type="radio" name="skeleton-transform">
+                        <span class="radio-checkmark"></span>
+                    </label>
+
+                </div>
             </div>
-            <div class="tab-content">
-                <label class="checkbox-container" id="current-skeleton-display">Display
-                    <input type="checkbox">
-                    <span class="checkmark"></span>
-                </label>
+            <div class="settings-tab">
+                <div class="tab-title">
+                    Velocity Skinning
+                </div>
+                <div class="tab-content">
+                    <label for="vs-flappy-power">Flapping power</label>
+                    <input id="vs-flappy-power" class="slider" step="0.01" type="range" value="1" max="2" min="0">
+                    <label for="vs-squashy-power">Squashing power</label>
+                    <input id="vs-squashy-power" class="slider" step="0.01" type="range" value="1" max="2" min="0">
+                    <label for="vs-alpha">Velocity smoothing factor</label>
+                    <input id="vs-alpha" class="slider" step="0.01" type="range" value="0.8" max="0.99" min="0.5">
+                </div>
+            </div>
+            <div class="settings-tab">
+                <div class="tab-title">
+                    Scene
+                </div>
+                <div class="tab-content">
+                    <button class="tab-button" id="scene-empty">Empty</button>
+                </div>
             </div>
         </div>
-        <div class="settings-tab">
-            <div class="tab-title">
-                Scene
-            </div>
-            <div class="tab-content">
-                <button class="tab-button" id="scene-empty">Empty</button>
-            </div>
+        <div id="drop-start" class="hidden">Drop here !</div>
+        <div id="progress" class="hidden">
+            <div class="loader"></div>Loading...
+            <div id="progress-bar1" class="progress-bar"></div>
+            <div id="progress-bar2" class="progress-bar"></div>
         </div>
     </div>
-    <div id="drop-start" class="hidden">Drop here !</div>
-    <div id="progress" class="hidden">
-      <div class="loader"></div>Loading...
-      <div id="progress-bar1" class="progress-bar"></div>
-      <div id="progress-bar2" class="progress-bar"></div>
-    </div>
-  </div>
 
 </body>
+
 </html>

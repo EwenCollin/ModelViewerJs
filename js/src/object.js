@@ -17,6 +17,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 	self.box;
 	self.animations;
 	self.interactiveSkeletons = [];
+	self.group;
 
 	self.getTransformGroup = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
@@ -112,6 +113,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 				}
 			}
 		});
+		self.group = object;
     }
 
     self.tick = function(dt, boneControls) {
@@ -127,6 +129,9 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		for(var is in self.interactiveSkeletons) {
 			self.interactiveSkeletons[is].select(mouse, rendererDomElement, self.camera);
 		}
+	}
+	self.delete = function() {
+		self.parent.remove(self.group);
 	}
 
 	self.onAfterInteraction = function(mouse) {
