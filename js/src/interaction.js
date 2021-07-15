@@ -23,6 +23,7 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.scene.add(self.transformControls);
     self.scene.add(self.boneControls);
     self.raycaster = new THREE.Raycaster();
+    self.userInterface;
 
     self.tick = function(dt) {
         for(var i = 0; i < self.objects.length; i++) {
@@ -32,7 +33,12 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
             self.selectedObject.selected = true;
             self.selectedObject.tick(dt, self.boneControls);
             self.transformControls.attach(self.selectedObject.getTransformGroup());
+            
         }
+    }
+    
+    self.setUserInterface = function(userInterface) {
+        self.userInterface = userInterface;
     }
 
     self.raycast = function(mouse, objects) {
@@ -68,6 +74,8 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
             var fObject = self.retrieveSelectedObject(selectedObject);
             if (fObject !== undefined && self.selectedObject !== fObject) {
                 self.selectedObject = fObject;
+                self.userInterface.setCurrentObject(self.selectedObject);
+                self.userInterface.setCurrentInteractiveSkeleton(self.selectedObject.interactiveSkeletons[0]);
             } else{
                 self.selectedObject.select(mouse, self.rendererDomElement);
             }
@@ -77,6 +85,14 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.onAfterInteraction = function(mouse) {
         if(self.selectedObject !== undefined) {
             self.selectedObject.onAfterInteraction(mouse);
+        }
+    }
+
+    self.deleteObject = function(object) {
+        var index = self.objects.indexOf(object);
+        if(index >= 0) {
+            object.delete();
+            self.objects.splice(index, 1);
         }
     }
 }

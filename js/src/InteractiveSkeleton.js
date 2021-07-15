@@ -58,6 +58,13 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
 
     self.velocity_skinning_data = [];
     
+    self.PARAMS = {
+        weights: {
+            flappy: 1,
+            squashy: 1
+        },
+        alpha: 0.85,
+    }
 
     self.helpers = {
         "angular_speed": [],
@@ -66,14 +73,6 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
     self.helpersGroup = new THREE.Group();
     self.skeletonMesh.add(self.helpersGroup);
     /*
-    self.angular_velocity_helper = new THREE.Mesh(new THREE.CylinderBufferGeometry( 1, 1, 5, 32 ), new THREE.MeshStandardMaterial({color: 0xFF0000}));
-    self.angular_velocity_helper.geometry.translate(0, 2.5, 0);
-    var helper_cone = new THREE.Mesh(new THREE.ConeBufferGeometry( 1.5, 2, 32 ), new THREE.MeshStandardMaterial({color: 0xFF0000}));
-    helper_cone.material.depthTest = false;
-    self.angular_velocity_helper.add(helper_cone);
-    helper_cone.position.set(0, 5, 0);
-    self.angular_velocity_helper.material.depthTest = false;
-
     self.VertexMotionHelper = new VertexMotionHelper();*/
 
 
@@ -267,6 +266,16 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         console.log(self.boneToJointIndices);
     }
 
+    self.setHelperVisibility = function(helper, visibility) {
+        for(var h in self.helpers[helper]) {
+            self.helpers[helper][h].visible = visibility;
+        }
+    }
+
+    self.getHelperVisibility = function(helper) {
+        return self.helpers[helper][0].visible;
+    }
+
     self.raycast = function(mouse, objects, rendererDomElement, camera) {
         const rect = rendererDomElement.getBoundingClientRect();
         var pos = new THREE.Vector2((mouse.x - rect.left) / rect.width, (mouse.y - rect.top) / rect.height);
@@ -402,8 +411,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
             "vertex_velocity_skinning": [],
             "velocity_skinning_deformation": [],
             "param": {
-                "flappy": 1,
-                "squashy": 0
+                "flappy": self.PARAMS.weights.flappy,
+                "squashy": self.PARAMS.weights.squashy
             }
         }
         self.recalculateMatrix(self.joints);
@@ -571,7 +580,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
                 M_parent.copy(self.joints[parent].matrix);
             }
 
-            var alpha = 0.90;
+            var alpha = self.PARAMS.alpha;
             model["velocity_skinning"]["speed_tracker"][b].current_speed.setFromMatrixPosition(self.joints[j].matrix).sub(model["skeleton_current"]["position_local"][b]).divideScalar(1/60.0).multiplyScalar(1-alpha);
             model["velocity_skinning"]["speed_tracker"][b].avg_speed.multiplyScalar(alpha).add(model["velocity_skinning"]["speed_tracker"][b].current_speed);
 
@@ -623,6 +632,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         }
         model["skeleton_current"]["rotation_local"] = computeLocalRotations();
         model["skeleton_current"]["rotation_global"] = computeGlobalRotations(model["skeleton_current"]["rotation_local"]);
+        model["param"]["flappy"] = self.PARAMS.weights.flappy;
+        model["param"]["squashy"] = self.PARAMS.weights.squashy;
         computeVelocitySkinningDeformation(model);
         for(var Kvertex = 0; Kvertex < self.geometryAttributes.position.count; Kvertex++) {
             self.geometryAttributes.position.array[Kvertex*3] += model["velocity_skinning_deformation"][Kvertex].x;

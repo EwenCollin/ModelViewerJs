@@ -24,7 +24,7 @@ let newObjects = [];
 var loader;
 var interaction;
 
-var userInterface = new UserInterface(document.getElementById("settings-panel"));
+var userInterface;
 
 init();
 animate();
@@ -73,6 +73,8 @@ function init() {
 
 	loader = new Loader(loadGroup, camera);
 	interaction = new Interaction(loader.getObjects(), renderer.domElement, camera, controls, scene);
+	userInterface = new UserInterface(document.getElementById("settings-panel"), interaction);
+	interaction.setUserInterface(userInterface);
 
 	//LIGHTS
 	const light = new THREE.DirectionalLight(0xffffff, 1.3, 100);
