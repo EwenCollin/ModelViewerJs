@@ -95,6 +95,15 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
             self.objects.splice(index, 1);
         }
     }
+
+    self.deleteAll = function() {
+        for(var obj in self.objects) {
+            self.objects[obj].delete();
+        }
+        self.objects = [];
+        self.selectedObject = undefined;
+        self.transformControls.detach();
+    }
 }
 
 export {Interaction}

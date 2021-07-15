@@ -75,6 +75,13 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
     /*
     self.VertexMotionHelper = new VertexMotionHelper();*/
 
+    self.getControlsSpace = function() {
+        return self.boneControls.space;
+    }
+
+    self.setControlsSpace = function(space) {
+        self.boneControls.setSpace(space);
+    }
 
     self.recalculateMatrix = function(joints) {
         for(var j = 0; j < joints.length; j++) {
@@ -288,6 +295,10 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         for(var j in self.joints) {
             self.joints[j].jointGroup.visible = visible;
         }
+    }
+
+    self.getSkeletonVisibility = function() {
+        return self.joints[0].jointGroup.visible;
     }
 
     self.setChildrenColor = function(index, color) {
@@ -693,7 +704,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
     }
 
     self.tick = function(boneControls) {
-        self.setSkeletonVisibility(true);
+        //self.setSkeletonVisibility(true);
         self.boneControls = boneControls;
         
         self.applyTransform();

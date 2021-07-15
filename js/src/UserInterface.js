@@ -38,6 +38,22 @@ var UserInterface = function(domElement, interaction) {
         self.dom["helper-centroid"].addEventListener("change", function() {
             self.setHelperCentroidVisible();
         });
+        self.dom["current-skeleton-display"].addEventListener("change", function() {
+            if (self.currentInteractiveSkeleton != null) {
+                self.currentInteractiveSkeleton.setSkeletonVisibility(self.dom["current-skeleton-display"].checked);
+            }
+        });
+        self.dom["skeleton-transform-local"].addEventListener("change", function() {
+            self.setTransformSpace();
+        });
+        self.dom["skeleton-transform-global"].addEventListener("change", function() {
+            self.setTransformSpace();
+        });
+        self.dom["scene-empty"].addEventListener("click", function() {
+            self.interaction.deleteAll();
+            self.currentInteractiveSkeleton = null;
+            self.currentObject = null;
+        });
     }
 
     self.setCurrentObject = function(object) {
@@ -46,14 +62,28 @@ var UserInterface = function(domElement, interaction) {
 
     self.setCurrentInteractiveSkeleton = function(interactiveSkeleton) {
         self.currentInteractiveSkeleton = interactiveSkeleton;
+        self.updateUIFromInteractiveSkeleton();
     }
 
     self.updateUIFromInteractiveSkeleton = function() {
         self.dom["helper-angular-velocity"].checked = self.currentInteractiveSkeleton.getHelperVisibility("angular_speed");
         self.dom["helper-centroid"].checked = self.currentInteractiveSkeleton.getHelperVisibility("center_of_mass");
+        self.dom["current-skeleton-display"].checked = self.currentInteractiveSkeleton.getSkeletonVisibility();
         self.dom["vs-flappy-power"].value = self.currentInteractiveSkeleton.PARAMS.weights.flappy;
         self.dom["vs-squashy-power"].value = self.currentInteractiveSkeleton.PARAMS.weights.squashy;
         self.dom["vs-alpha"].value = self.currentInteractiveSkeleton.PARAMS.alpha;
+        if(self.interaction.boneControls.space === "local") {
+            self.dom["skeleton-transform-local"].checked = true;
+        } else {
+            self.dom["skeleton-transform-global"].checked = true;
+        }
+    }
+
+    self.setTransformSpace = function() {
+        if (self.currentInteractiveSkeleton != null) {
+            if(self.dom["skeleton-transform-local"].checked) self.interaction.boneControls.setSpace("local");
+            else self.interaction.boneControls.setSpace("global");
+        }
     }
 
     self.setHelperAngularSpeedVisible = function() {
