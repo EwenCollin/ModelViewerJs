@@ -103,7 +103,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.setPosition(new THREE.Vector3(0, 0, index*200));
 		object.traverse( function ( child ) {
 			if ( child.isMesh ) {
-				child.material.metalness = child.material.metalness/2.5;
+				child.material.metalness = 0;
 				if (child.skeleton) {
 					child.updateMatrix();
 					child.updateMatrixWorld();
@@ -114,6 +114,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 			}
 		});
 		self.group = object;
+		console.log(self);
     }
 
     self.tick = function(dt, boneControls) {

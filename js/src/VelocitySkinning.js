@@ -36,8 +36,8 @@ function computeVelocitySkinningDeformation(model) {
     const com_temp = new THREE.Vector3();
     for(let k_joint=0; k_joint<N_joint; ++k_joint)
     {
-        const vertex_dependency = model["velocity_skinning"]["vertex_depending_on_joint"][k_joint];
-        const weight_dependency = model["velocity_skinning"]["vertex_weight_depending_on_joint"][k_joint];
+        const vertex_dependency = model["velocity_skinning"]["reverse_vertex_depending_on_joint"][k_joint];
+        const weight_dependency = model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][k_joint];
         const N_dependency = vertex_dependency.length;
 
         for(let k_dep=0; k_dep<N_dependency; ++k_dep)
