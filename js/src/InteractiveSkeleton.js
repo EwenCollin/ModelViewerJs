@@ -1,3 +1,4 @@
+
 import * as THREE from '../../build/three.module.js';
 import { TransformControls } from '../jsm/controls/TransformControls.js';
 import { computeVelocitySkinningDeformation } from './VelocitySkinning.js';
@@ -475,28 +476,28 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         
         for(var Kj = 0; Kj < self.skeleton.bones.length; Kj++) {
             model["velocity_skinning"]["reverse_vertex_depending_on_joint"].push([]);
-            model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"].push([]);/*
-            var rJ = Kj;
-            var parentIndices = [rJ];
-            while(rJ != -1) {
-                rJ = self.joints[self.boneToJointIndices[rJ]].parentIndex;
-                if(rJ != -1) {
-                    parentIndices.push(self.joints[rJ].index);
-                    rJ = self.joints[rJ].index;
-                }
-            }*/
+            model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"].push([]);
             for(var Kvertex = 0; Kvertex < self.initialPositions.count; Kvertex++) {
                 var jointIndex = new THREE.Vector4().fromBufferAttribute(self.geometryAttributes.skinIndex, Kvertex);
                 var jointWeight = new THREE.Vector4().fromBufferAttribute(self.geometryAttributes.skinWeight, Kvertex);
                 for(var Kdependency = 0; Kdependency < 4; Kdependency++) {
-                    if(jointIndex.getComponent(Kdependency) < Kj && jointWeight.getComponent(Kdependency) > 0) {
-                        if(model["velocity_skinning"]["reverse_vertex_depending_on_joint"][Kj].includes(Kvertex)) {
+                    var Rj = jointIndex.getComponent(Kdependency);
+                    while(Rj != -1 && Rj != Kj) {
+                        Rj = self.joints[self.boneToJointIndices[Rj]].parentIndex;
+                        if(Rj != -1) Rj = self.joints[Rj].index;
+                    }
+                    if(Rj == Kj && jointWeight.getComponent(Kdependency) > 0) {
+                        if(model["velocity_skinning"]["reverse_vertex_depending_on_joint"][Kj].includes(Kvertex) && jointIndex.getComponent(Kdependency) != Kj) {
                             var tmp_joint_vertex_id = model["velocity_skinning"]["reverse_vertex_depending_on_joint"][Kj].indexOf(Kvertex);
-                            model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][Kj][tmp_joint_vertex_id] += jointWeight.getComponent(Kdependency);
+                            if (model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][Kj][tmp_joint_vertex_id] + jointWeight.getComponent(Kdependency) <= 1) {
+                                model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][Kj][tmp_joint_vertex_id] += jointWeight.getComponent(Kdependency);
+                            }
                         }
                         else {
+                            
                             model["velocity_skinning"]["reverse_vertex_depending_on_joint"][Kj].push(Kvertex);
-                            model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][Kj].push(jointWeight.getComponent(Kdependency));
+                            if(jointIndex.getComponent(Kdependency) == Kj) model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][Kj].push(1);
+                            else model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][Kj].push(jointWeight.getComponent(Kdependency));
                         }
                     }
                 }

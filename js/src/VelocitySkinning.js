@@ -28,7 +28,7 @@ function computeVelocitySkinningDeformation(model) {
     
     // update centroid 
     //  (this implementation is a simple non-weighted by the are - the full one is in the C++ code)
-    const N_joint = model["velocity_skinning"]["vertex_depending_on_joint"].length;
+    const N_joint = model["velocity_skinning"]["reverse_vertex_depending_on_joint"].length;
     for(let k_joint=0; k_joint<N_joint; ++k_joint){
         model["velocity_skinning"]["center_of_mass"][k_joint].set(0,0,0);
     }
