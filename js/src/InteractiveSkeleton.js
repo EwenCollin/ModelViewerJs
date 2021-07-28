@@ -319,7 +319,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         self.transformGroup.matrix.copy(joint.matrixWorld);
         var parentIndex = joint.parentIndex;
         var isOnlyChild = self.jointIsOnlyChild(jointIndex);
-        console.log("parentIndex", parentIndex, "isOnlyChild", isOnlyChild);
+        console.log("selected Joint : ", joint);
         self.transformGroup.matrix.copy(self.joints[parentIndex].matrixWorld);
         self.transformGroupSub.position.set(0, 0, 0);
         self.transformGroupSub.rotation.set(0, 0, 0);
@@ -685,27 +685,38 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         return parentRefOccurences <= 1;
     }
 
+    self.retrieveJointFromBone = function(bone) {
+        for(var j in self.joints) {
+            if(self.joints[j].boneObject.uuid === bone.uuid) return self.joints[j];
+        }
+        console.log("no joint was found for this bone");
+    }
+
     self.applyTransform = function() {
         if(self.selectedBone !== undefined) {
             var transformMatrix = new THREE.Matrix4();
             var joint = self.selectedBone.joint;
             transformMatrix.multiplyMatrices(self.transformGroupSub.matrix, self.selectedBone.lastMatrix);
             
-            //if(self.TRANSFORM_MODE = self.MODE.ROTATE) {
-                var parentIndex = joint.parentIndex;
-                if(!self.jointIsOnlyChild(joint)) {
-                    var oldJointMatrix = joint.matrix.clone();
-                    var updateMatrix = new THREE.Matrix4().multiplyMatrices(transformMatrix, oldJointMatrix);
-                    oldJointMatrix.invert();
-                    var finalTransformMatrix = new THREE.Matrix4().multiplyMatrices(updateMatrix, oldJointMatrix);
-                    joint.matrix.copy(new THREE.Matrix4().multiplyMatrices(transformMatrix, joint.matrix));
-                } else {
-                    if(parentIndex !== -1) self.joints[joint.parentIndex].matrix.multiply(transformMatrix);
-                    else joint.matrix.multiply(transformMatrix);
+            var parentIndex = joint.parentIndex;
+            if(joint.boneObject.children.length == 0) {
+                console.log("joint has no child");
+                self.joints[joint.parentIndex].matrix.multiply(transformMatrix);
+                for(var c in self.joints[joint.parentIndex].boneObject.children) {
+                    var childJoint = self.retrieveJointFromBone(self.joints[joint.parentIndex].boneObject.children[c]);
+                    if(childJoint != joint) childJoint.matrix.premultiply(transformMatrix.clone().invert());
                 }
-            /*} else {
-                self.reprBoneMatrix[boneIndex].multiply(transformMatrix);
-            }*/
+            }
+            else if(!self.jointIsOnlyChild(joint)) {
+                var oldJointMatrix = joint.matrix.clone();
+                var updateMatrix = new THREE.Matrix4().multiplyMatrices(transformMatrix, oldJointMatrix);
+                oldJointMatrix.invert();
+                var finalTransformMatrix = new THREE.Matrix4().multiplyMatrices(updateMatrix, oldJointMatrix);
+                joint.matrix.copy(new THREE.Matrix4().multiplyMatrices(transformMatrix, joint.matrix));
+            } else {
+                if(parentIndex !== -1) self.joints[joint.parentIndex].matrix.multiply(transformMatrix);
+                else joint.matrix.multiply(transformMatrix);
+            }
             self.selectedBone.lastMatrix.copy(self.transformGroupSub.matrix).invert();
         }
     }
