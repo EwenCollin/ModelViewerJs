@@ -101,6 +101,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.box.visible = false;
 		self.boxHelper.visible = false;
 		self.setPosition(new THREE.Vector3(0, 0, index*200));
+		var skinnedMeshToRemove = [];
 		object.traverse( function ( child ) {
 			if ( child.isMesh ) {
 				child.material.metalness = 0;
@@ -108,11 +109,27 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					child.updateMatrix();
 					child.updateMatrixWorld();
 					console.log(child);
-					self.interactiveSkeletons.push(new InteractiveSkeleton(child, child.skeleton, object));
+					skinnedMeshToRemove.push(child);
+					var childMaterials = [];
+					if(child.material.length > 0) {
+						for(var mat in child.material) {
+							childMaterials.push(child.material[mat].clone());
+						}
+					}
+					else {
+						childMaterials.push(child.material.clone());
+					}
+					var clonedMesh = new THREE.Mesh(child.geometry.clone(), childMaterials);
+					child.parent.add(clonedMesh);
+					child.matrix.decompose(clonedMesh.position, clonedMesh.quaternion, clonedMesh.scale);
+					self.interactiveSkeletons.push(new InteractiveSkeleton(clonedMesh, child.skeleton, object));
 					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
 				}
 			}
 		});
+		for(var child in skinnedMeshToRemove) {
+			object.remove(skinnedMeshToRemove[child]);
+		}
 		self.group = object;
 		console.log(self);
     }

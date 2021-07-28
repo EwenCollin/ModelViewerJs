@@ -7,6 +7,7 @@ import { VertexMotionHelper } from './VertexMotionHelper.js';
 var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
     var self = this;
     self.skinnedMesh = skinnedMesh;
+    
     self.skeleton = skeleton;
     self.rootGroup = rootGroup;
     self.skeletonMesh = new THREE.Group();
@@ -142,7 +143,6 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
             boneMesh.matrix.copy(new THREE.Matrix4().multiplyMatrices(T, boneMesh.matrix));
         }
         self.skeletonMesh.updateMatrixWorld(true);
-        var skeletonMeshMatrix = self.skeletonMesh.matrixWorld.clone();
         var scale = self.scaleUnit;
         for(var i = 0; i < self.joints.length; i++) {
             if(self.joints[i].parentIndex === -1) updateBoneMesh(self.joints[i].matrixWorld, self.joints[i].matrixWorld, self.joints[i].jointGroup, scale);
@@ -721,6 +721,18 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         }
     }
 
+    self.updateBindedSkeleton = function() {
+        for(var j in self.joints) {
+            self.joints[j].boneObject.matrixAutoUpdate = false;
+            self.joints[j].boneObject.matrix.copy(self.joints[j].matrix);
+        }
+    }
+    self.updateJointsFromBindedSkeleton = function() {
+        for(var j in self.joints) {
+            self.joints[j].matrix.copy(self.joints[j].boneObject.matrix);
+        }
+    }
+
     self.onAfterInteraction = function(mouse) {
         //self.updateTransformSelection(self.boneArray[boneIndex]);
     }
@@ -735,8 +747,11 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         //self.setSkeletonVisibility(true);
         self.boneControls = boneControls;
         
+        self.updateJointsFromBindedSkeleton();
         self.applyTransform();
+        self.updateBindedSkeleton();
         self.updateRepr();
+
 
         self.updateGeometry();
         self.updateGeometryVS();
