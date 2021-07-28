@@ -61,7 +61,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 				self.animations = self.mesh.animations;
 				self.animationMixer = new THREE.AnimationMixer(self.mesh.scene);
 				for(var i = 0; i < self.mesh.animations.length; i++) {
-					const action = self.animationMixer.clipAction(self.mesh.animations[i]);
+					const action = self.animationMixer.clipAction(self.mesh.animations[0]);
 					//action.play();
 				}
             }
@@ -102,6 +102,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.boxHelper.visible = false;
 		self.setPosition(new THREE.Vector3(0, 0, index*200));
 		var skinnedMeshToRemove = [];
+		var meshToAdd = [];
 		object.traverse( function ( child ) {
 			if ( child.isMesh ) {
 				child.material.metalness = 0;
@@ -110,25 +111,28 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					child.updateMatrixWorld();
 					console.log(child);
 					skinnedMeshToRemove.push(child);
-					var childMaterials = [];
-					if(child.material.length > 0) {
-						for(var mat in child.material) {
-							childMaterials.push(child.material[mat].clone());
-						}
-					}
-					else {
-						childMaterials.push(child.material.clone());
-					}
-					var clonedMesh = new THREE.Mesh(child.geometry.clone(), childMaterials);
-					child.parent.add(clonedMesh);
-					child.matrix.decompose(clonedMesh.position, clonedMesh.quaternion, clonedMesh.scale);
+					var mat = child.material;
+					//Array.isArray(mat) ? mat.reduce(function(acc, m){ acc.push(m.clone()); }, []) : mat.clone();
+					var clonedMesh = new THREE.Mesh(child.geometry.clone(), mat);
+					clonedMesh.matrixAutoUpdate = false;
+					child.updateMatrixWorld(true);
+					clonedMesh.matrix.copy(child.matrixWorld);
+					meshToAdd.push(clonedMesh);
+					//child.skeleton.pose();
 					self.interactiveSkeletons.push(new InteractiveSkeleton(clonedMesh, child.skeleton, object));
+					skinnedMeshToRemove.push(child);
 					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
 				}
 			}
 		});
-		for(var child in skinnedMeshToRemove) {
-			object.remove(skinnedMeshToRemove[child]);
+		for(var i in skinnedMeshToRemove) {
+			object.remove(skinnedMeshToRemove[i]);
+			object.traverse(function(child) {
+				child.remove(skinnedMeshToRemove[i]);
+			});
+		}
+		for(var i in meshToAdd) {
+			object.attach(meshToAdd[i]);
 		}
 		self.group = object;
 		console.log(self);
