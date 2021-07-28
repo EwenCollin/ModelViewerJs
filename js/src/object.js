@@ -119,7 +119,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					clonedMesh.matrix.copy(child.matrixWorld);
 					meshToAdd.push(clonedMesh);
 					//child.skeleton.pose();
-					self.interactiveSkeletons.push(new InteractiveSkeleton(clonedMesh, child.skeleton, object));
+					self.interactiveSkeletons.push(new InteractiveSkeleton(clonedMesh, child.skeleton, object, self.animations));
 					skinnedMeshToRemove.push(child);
 					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
 				}

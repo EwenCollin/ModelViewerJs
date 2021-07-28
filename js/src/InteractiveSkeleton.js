@@ -4,10 +4,12 @@ import { TransformControls } from '../jsm/controls/TransformControls.js';
 import { computeVelocitySkinningDeformation } from './VelocitySkinning.js';
 import { VertexMotionHelper } from './VertexMotionHelper.js';
 
-var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
+var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations) {
     var self = this;
     self.skinnedMesh = skinnedMesh;
     
+    self.animations = animations;
+
     self.skeleton = skeleton;
     self.rootGroup = rootGroup;
     self.skeletonMesh = new THREE.Group();
@@ -17,6 +19,12 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
     }
     var rootJoint = getRoot(self.skeleton.bones[0]);
     rootJoint.parent.add(self.skeletonMesh);
+
+    
+    self.animationMixer = new THREE.AnimationMixer(rootJoint.parent);
+    self.animationAction = self.animationMixer.clipAction(self.animations[0], rootJoint.parent);
+    
+    self.animationAction.reset().play();
     //self.skinnedMesh.parent.add(self.skeletonMesh);
     self.skeletonMesh.matrixAutoUpdate = false;
     self.raycaster = new THREE.Raycaster();
@@ -63,10 +71,13 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
     
     self.PARAMS = {
         weights: {
-            flappy: 1,
-            squashy: 1
+            flappy: 0.01,
+            squashy: 0.01
         },
-        alpha: 0.85,
+        alpha: 0.7,
+        playAnimation: true,
+        selectedAnimation: 0,
+        animationTime: 0,
     }
 
     self.helpers = {
@@ -188,7 +199,13 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
                 index: retrieveSkeletonIndexFromBoneObject(self.skeleton, jointArray[j]),
                 boneObject: jointArray[j],
                 matrixWorld: new THREE.Matrix4(),
+                animation: {
+                    position: new THREE.Vector3(),
+                    quaternion: new THREE.Quaternion(),
+                    scale: new THREE.Vector3()
+                }
             };
+            jointObject.matrix.decompose(jointObject.animation.position, jointObject.animation.quaternion, jointObject.animation.scale)
             jointObjects.push(jointObject);
         }
 
@@ -725,11 +742,13 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         for(var j in self.joints) {
             self.joints[j].boneObject.matrixAutoUpdate = false;
             self.joints[j].boneObject.matrix.copy(self.joints[j].matrix);
+            self.joints[j].matrix.decompose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
         }
     }
     self.updateJointsFromBindedSkeleton = function() {
         for(var j in self.joints) {
-            self.joints[j].matrix.copy(self.joints[j].boneObject.matrix);
+            self.joints[j].boneObject.matrix.compose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
+            self.joints[j].matrix.compose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
         }
     }
 
@@ -743,12 +762,76 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup) {
         self.scaleUnit = new THREE.Vector3(0, self.prescale + 1, 0).applyMatrix4(skeletonMeshMatrix.clone().invert()).distanceTo(new THREE.Vector3(0, 1, 0).applyMatrix4(skeletonMeshMatrix.clone().invert()));
     }
 
+    self.interpolateJointsFromAnimation = function(animation, animationTime) {
+        if(animation.duration < animationTime) {
+            self.PARAMS.animationTime = animationTime - animation.duration;
+            animationTime = animationTime - animation.duration;
+        }
+        const p_temp = new THREE.Vector3();
+        const p1 = new THREE.Vector3();
+        const p2 = new THREE.Vector3();
+        const q_temp = new THREE.Quaternion();
+        const r1 = new THREE.Quaternion();
+        const r2 = new THREE.Quaternion();
+        
+        for(var t = 0; t < animation.tracks.length; t++) {
+            var track = animation.tracks[t];
+            for(var i = 0; i < track.times.length; i++) {
+                if(animationTime > track.times[i]) {
+                    var cTIndex = i;
+                    var nTIndex = 0;
+                    if(i+1 < track.times.length) nTIndex = i+1;
+                    var alpha = (animationTime-track.times[cTIndex])/(track.times[nTIndex] - track.times[cTIndex]);
+                    if(track.name.endsWith("position") || track.name.endsWith("scale")) {
+                        
+                        p1.set(track.values[cTIndex*3], track.values[cTIndex*3] + 1, track.values[cTIndex*3] + 2);
+                        p2.set(track.values[nTIndex*3], track.values[nTIndex*3] + 1, track.values[nTIndex*3] + 2);
+                        p_temp.copy(p1);
+                        p_temp.multiplyScalar(1-alpha);
+                        p_temp.add(p2.multiplyScalar(alpha));
+                    } else if(track.name.endsWith("quaternion")) {
+                        r1.set(track.values[cTIndex*4], track.values[cTIndex*4] + 1, track.values[cTIndex*4] + 2, track.values[cTIndex*4] + 3);
+                        r2.set(track.values[nTIndex*4], track.values[nTIndex*4] + 1, track.values[nTIndex*4] + 2, track.values[nTIndex*4] + 3);
+                        q_temp.copy(r1);
+                        q_temp.slerp(r2, alpha);
+                    }
+                    var boneName = track.name;
+                    for(var j = 0; j < self.joints.length; j++) {
+                        if(boneName.split(".")[0] === self.joints[j].boneObject.name){
+                            if(boneName.endsWith("position")) self.joints[j].animation.position.copy(p_temp);
+                            if(boneName.endsWith("scale")) self.joints[j].animation.scale.copy(p_temp);
+                            if(boneName.endsWith("quaternion")) self.joints[j].animation.quaternion.copy(q_temp);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        for(var j = 0; j < self.joints.length; j++) {
+            var fMatrix = self.joints[j].matrix;
+            fMatrix.identity();
+            fMatrix.multiplyMatrices(new THREE.Matrix4().makeScale(self.joints[j].animation.scale.x, self.joints[j].animation.scale.y, self.joints[j].animation.scale.z), fMatrix);
+            fMatrix.multiplyMatrices(new THREE.Matrix4().makeRotationFromQuaternion(self.joints[j].animation.quaternion), fMatrix);
+            fMatrix.multiplyMatrices(new THREE.Matrix4().makeTranslation(self.joints[j].animation.position.x, self.joints[j].animation.position.y, self.joints[j].animation.position.z), fMatrix);
+            
+            //self.joints[j].matrix.compose(self.joints[j].animation.position, self.joints[j].animation.quaternion, self.joints[j].animation.scale);
+        }
+    }
+
     self.tick = function(boneControls) {
         //self.setSkeletonVisibility(true);
         self.boneControls = boneControls;
         
+        self.animationMixer.update(1/60);
         self.updateJointsFromBindedSkeleton();
         self.applyTransform();
+        //console.log();
+        console.log(self.joints[1].boneObject.quaternion);
+        if(self.PARAMS.playAnimation) {
+            //self.interpolateJointsFromAnimation(self.animations[self.PARAMS.selectedAnimation], self.PARAMS.animationTime + 1/60);
+        }
+        
         self.updateBindedSkeleton();
         self.updateRepr();
 
