@@ -75,7 +75,7 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
             if (fObject !== undefined && self.selectedObject !== fObject) {
                 self.selectedObject = fObject;
                 self.userInterface.setCurrentObject(self.selectedObject);
-                self.userInterface.setCurrentInteractiveSkeleton(self.selectedObject.interactiveSkeletons[0]);
+                self.userInterface.setCurrentInteractiveSkeleton(self.selectedObject.interactiveSkeletons);
             } else{
                 self.selectedObject.select(mouse, self.rendererDomElement);
             }
