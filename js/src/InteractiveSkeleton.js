@@ -78,6 +78,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
         selectedAnimation: 0,
         animationTime: 0,
         animationSpeed: 1/60,
+        animationSpeedMultiplier: 1,
         animationClips: self.animations,
     }
 
@@ -640,7 +641,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
             }
 
             var alpha = self.PARAMS.alpha;
-            model["velocity_skinning"]["speed_tracker"][b].current_speed.setFromMatrixPosition(self.joints[j].matrix).sub(model["skeleton_current"]["position_local"][b]).divideScalar(1/60.0).multiplyScalar(1-alpha);
+            model["velocity_skinning"]["speed_tracker"][b].current_speed.setFromMatrixPosition(self.joints[j].matrix).sub(model["skeleton_current"]["position_local"][b]).divideScalar(self.PARAMS.animationSpeed*self.PARAMS.animationSpeedMultiplier).multiplyScalar(1-alpha);
             model["velocity_skinning"]["speed_tracker"][b].avg_speed.multiplyScalar(alpha).add(model["velocity_skinning"]["speed_tracker"][b].current_speed);
 
             var q0 = model["velocity_skinning"]["rotation_tracker"][b].last_position.clone();
@@ -653,7 +654,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
 
             const new_rotation_speed_vec = new THREE.Vector3();
             quaternion_to_angular_speed(new_rotation_speed, new_rotation_speed_vec);
-            new_rotation_speed_vec.multiplyScalar(1-alpha).divideScalar(1/60.0);
+            new_rotation_speed_vec.multiplyScalar(1-alpha).divideScalar(self.PARAMS.animationSpeed*self.PARAMS.animationSpeedMultiplier);
             
 
             model["velocity_skinning"]["rotation_tracker"][b].avg_speed.multiplyScalar(alpha);
@@ -777,10 +778,9 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
     }
 
     self.interpolateJointsFromAnimation = function(animation) {
-        self.PARAMS.animationTime += self.PARAMS.animationSpeed;
+        self.PARAMS.animationTime += self.PARAMS.animationSpeed*self.PARAMS.animationSpeedMultiplier;
         
         if(animation.duration < self.PARAMS.animationTime) {
-            console.log("animation duration bypass");
             self.PARAMS.animationTime = self.PARAMS.animationTime - animation.duration;
         }
         var animationTime = self.PARAMS.animationTime;

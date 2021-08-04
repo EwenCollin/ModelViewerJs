@@ -9,7 +9,7 @@ var UserInterface = function(domElement, interaction) {
     self.currentInteractiveSkeleton = [];
 
     self.dom = {}
-    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown"]
+    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value"]
 
     self.init = function() {
         for(var d in self.domList) {
@@ -57,6 +57,9 @@ var UserInterface = function(domElement, interaction) {
         self.dom["animation-open-dropdown"].addEventListener("click", function() {
             self.dom["animation-dropdown"].classList.toggle("show-animation-item");
         });
+        self.dom["anim-speed-multiplier"].addEventListener("change", function() {
+            self.setSpeedMultiplier(self.dom["anim-speed-multiplier"].value);
+        });
     }
 
     self.setCurrentObject = function(object) {
@@ -75,6 +78,7 @@ var UserInterface = function(domElement, interaction) {
         self.dom["vs-flappy-power"].value = self.currentInteractiveSkeleton[0].PARAMS.weights.flappy;
         self.dom["vs-squashy-power"].value = self.currentInteractiveSkeleton[0].PARAMS.weights.squashy;
         self.dom["vs-alpha"].value = self.currentInteractiveSkeleton[0].PARAMS.alpha;
+        self.dom["anim-speed-multiplier"].value = self.currentInteractiveSkeleton[0].PARAMS.animationSpeedMultiplier;
         if(self.interaction.boneControls.space === "local") {
             self.dom["skeleton-transform-local"].checked = true;
         } else {
@@ -141,6 +145,13 @@ var UserInterface = function(domElement, interaction) {
         for (var isk in self.currentInteractiveSkeleton) {
             self.currentInteractiveSkeleton[isk].PARAMS.alpha = value;
         }
+    }
+    self.setSpeedMultiplier = function(value) {
+        self.dom["anim-speed-multiplier-value"].innerText = value;
+        for (var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].PARAMS.animationSpeedMultiplier = value;
+        }
+
     }
 
 }
