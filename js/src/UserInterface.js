@@ -7,9 +7,10 @@ var UserInterface = function(domElement, interaction) {
     self.domTabs = self.domElement.getElementsByClassName("settings-tab");
     self.currentObject = null;
     self.currentInteractiveSkeleton = [];
+    self.selectedJoint = [];
 
     self.dom = {}
-    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value"]
+    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown"];
 
     self.init = function() {
         for(var d in self.domList) {
@@ -60,6 +61,15 @@ var UserInterface = function(domElement, interaction) {
         self.dom["anim-speed-multiplier"].addEventListener("change", function() {
             self.setSpeedMultiplier(self.dom["anim-speed-multiplier"].value);
         });
+        self.dom["bone-open-dropdown"].addEventListener("click", function() {
+            self.dom["bone-dropdown"].classList.toggle("show-animation-item");
+        });
+        self.dom["bone-vs-enable-all"].addEventListener("click", function() {
+            self.toggleJoint(null, null, false);
+        });
+        self.dom["bone-vs-disable-all"].addEventListener("click", function() {
+            self.toggleJoint(null, null, true);
+        });
     }
 
     self.setCurrentObject = function(object) {
@@ -76,8 +86,11 @@ var UserInterface = function(domElement, interaction) {
         self.dom["helper-centroid"].checked = self.currentInteractiveSkeleton[0].getHelperVisibility("center_of_mass");
         self.dom["current-skeleton-display"].checked = self.currentInteractiveSkeleton[0].getSkeletonVisibility();
         self.dom["vs-flappy-power"].value = self.currentInteractiveSkeleton[0].PARAMS.weights.flappy;
+        self.dom["vs-flappy-power-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.weights.flappy;
         self.dom["vs-squashy-power"].value = self.currentInteractiveSkeleton[0].PARAMS.weights.squashy;
+        self.dom["vs-squashy-power-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.weights.squashy;
         self.dom["vs-alpha"].value = self.currentInteractiveSkeleton[0].PARAMS.alpha;
+        self.dom["vs-alpha-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.alpha;
         self.dom["anim-speed-multiplier"].value = self.currentInteractiveSkeleton[0].PARAMS.animationSpeedMultiplier;
         if(self.interaction.boneControls.space === "local") {
             self.dom["skeleton-transform-local"].checked = true;
@@ -106,6 +119,26 @@ var UserInterface = function(domElement, interaction) {
                     self.currentInteractiveSkeleton[isk].setAnimation(parseInt(this.getAttribute("anim-index")));
                 }
             });
+        }
+        self.updateBoneSelectionUI();
+    }
+
+    self.updateBoneSelectionUI = function() {
+        self.dom["bone-dropdown"].innerHTML = "";
+        for(var isk in self.currentInteractiveSkeleton) {
+            for(var j in self.currentInteractiveSkeleton[isk].joints) {
+                var boneElement = document.createElement("div");
+                boneElement.setAttribute("bone-index", j);
+                boneElement.setAttribute("isk-index", isk);
+                boneElement.innerText = self.currentInteractiveSkeleton[isk].joints[j].boneObject.name + "-" + isk;
+                boneElement.classList.add("animation-item");
+                if(!self.currentInteractiveSkeleton[isk].getToggleJointVS(parseInt(j))) boneElement.classList.add("bone-disabled");
+                self.dom["bone-dropdown"].appendChild(boneElement);
+                boneElement.addEventListener("click", function() {
+                    self.selectedJoint = [parseInt(this.getAttribute("isk-index")), parseInt(this.getAttribute("bone-index"))];
+                    self.toggleJoint(self.selectedJoint[0], self.selectedJoint[1], !this.classList.contains("bone-disabled"));
+                });
+            }
         }
     }
 
@@ -151,7 +184,17 @@ var UserInterface = function(domElement, interaction) {
         for (var isk in self.currentInteractiveSkeleton) {
             self.currentInteractiveSkeleton[isk].PARAMS.animationSpeedMultiplier = value;
         }
+    }
 
+    self.toggleJoint = function(interactiveSkeletonIndex, jointIndex, enabled) {
+        if(interactiveSkeletonIndex == null) {
+            for(var isk in self.currentInteractiveSkeleton) {
+                self.currentInteractiveSkeleton[isk].toggleJointVS(jointIndex, enabled);
+            }
+        } else {
+            self.currentInteractiveSkeleton[interactiveSkeletonIndex].toggleJointVS(jointIndex, enabled);
+        }
+        self.updateBoneSelectionUI();
     }
 
 }

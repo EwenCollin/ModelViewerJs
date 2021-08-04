@@ -70,8 +70,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
     
     self.PARAMS = {
         weights: {
-            flappy: 0.01,
-            squashy: 0.01
+            flappy: 1,
+            squashy: 1
         },
         alpha: 0.7,
         playAnimation: false,
@@ -102,6 +102,29 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
             self.animationMixer.stopAllAction();
             self.PARAMS.playAnimation = false;
         }
+    }
+
+    self.toggleJointVS = function(joint, enabled) {
+        if(joint == null) {
+            self.velocity_skinning_data["param"]["disabled_joints"] = [];
+            if(!enabled) {
+                for(var j in self.joints) {
+                    self.velocity_skinning_data["param"]["disabled_joints"].push(parseInt(j));
+                }
+            }
+        } else {
+            var index = self.velocity_skinning_data["param"]["disabled_joints"].indexOf(joint);
+            if(enabled && index !== -1) {
+                self.velocity_skinning_data["param"]["disabled_joints"].splice(index, 1);
+            }
+            else if(!enabled && index == -1) {
+                self.velocity_skinning_data["param"]["disabled_joints"].push(joint);
+            }
+        }
+    }
+
+    self.getToggleJointVS = function(joint) {
+        return self.velocity_skinning_data["param"]["disabled_joints"].indexOf(joint) !== -1;
     }
 
     self.getControlsSpace = function() {
@@ -441,7 +464,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
             "velocity_skinning_deformation": [],
             "param": {
                 "flappy": self.PARAMS.weights.flappy,
-                "squashy": self.PARAMS.weights.squashy
+                "squashy": self.PARAMS.weights.squashy,
+                "disabled_joints": []
             }
         }
         self.recalculateMatrix(self.joints);

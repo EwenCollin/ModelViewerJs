@@ -468,13 +468,13 @@ void main()
                     Animations
                 </div>
                 <div class="tab-content">
+                    <label for="anim-speed-multiplier">Animation speed multiplier - <span id="anim-speed-multiplier-value">1</span></label>
+                    <input id="anim-speed-multiplier" class="slider" step="0.01" type="range" value="1" max="2" min="0">
                     <div class="dropdown">
-                        <label for="anim-speed-multiplier">Animation speed multiplier - <span id="anim-speed-multiplier-value">1</span></label>
-                        <input id="anim-speed-multiplier" class="slider" step="0.01" type="range" value="1" max="2" min="0">
                         <button id="animation-open-dropdown" class="dropbtn">Select current animation</button>
                         <div id="animation-dropdown" class="dropdown-content">
                         </div>
-                      </div>
+                    </div>
                 </div>
             </div>
             <div class="settings-tab">
@@ -505,6 +505,20 @@ void main()
                         <span class="radio-checkmark"></span>
                     </label>
 
+                </div>
+            </div>
+            <div class="settings-tab">
+                <div class="tab-title">
+                    Bones
+                </div>
+                <div class="tab-content">
+                    <button class="tab-button" id="bone-vs-disable-all">Disable velocity skinning for every bone</button>
+                    <button class="tab-button" id="bone-vs-enable-all">Enable velocity skinning for every bone</button>
+                    <div class="dropdown">
+                        <button id="bone-open-dropdown" class="dropbtn">Select bone</button>
+                        <div id="bone-dropdown" class="dropdown-content">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="settings-tab">

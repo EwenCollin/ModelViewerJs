@@ -127,6 +127,7 @@ body {
 
 /* BUTTONS */
 .tab-button {
+  margin: 2px;
   border: 2px solid #2196F3;
   background: #2196F3;
   transition: 0.3s;
@@ -361,3 +362,7 @@ body {
 
 /* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
 .show-animation-item {display:block;}
+
+.bone-disabled{
+  background:rgba(0, 0, 0, 0.5);
+}
