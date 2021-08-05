@@ -12,87 +12,28 @@
         }
     </style>
     <script id="fragmentShader" type="x-shader/x-fragment">
-    #version 330 core
+    //#version 330 correct
 
-    in struct fragment_data
-    {
-        vec4 position;
-        vec4 normal;
-        vec4 color;
-        vec4 position_cam_space;
-        float floppy_weight;
-        vec2 texture_uv;
-    } fragment;
-    
-    
+    uniform sampler2D map;
+    varying vec2 vUv;
+	varying vec3 vNormal;
     out vec4 FragColor;
-    
-    uniform vec3 camera_position;
-    uniform vec3 color     = vec3(1.0, 1.0, 1.0);
-    uniform float color_alpha = 1.0;
-    uniform float ambiant  = 0.2;
-    uniform float diffuse  = 0.8;
-    uniform float specular = 0.5;
-    uniform int specular_exponent = 128;
-    
-    uniform bool color_weight = false;
-    
-    uniform sampler2D texture_character;
-    
-    vec3 light = vec3(camera_position.x, camera_position.y, camera_position.z);
-    
-    void main()
-    {
-        vec3 n = normalize(fragment.normal.xyz);
-        vec3 u = normalize(light-fragment.position.xyz);
-        vec3 r = reflect(u,n);
-        vec3 t = normalize(fragment.position.xyz-camera_position);
-    
-    
-        float diffuse_value  = diffuse * clamp( dot(u,n), 0.0, 1.0);
-        float specular_value = specular * pow( clamp( dot(r,t), 0.0, 1.0), specular_exponent);
-    
-        vec3 texture_character_color = texture(texture_character, fragment.texture_uv).rgb;
-    
-        vec3 white = vec3(1.0);
-        vec3 c = white;
-        
-       
-        // For Cthulhu
-        /*
-        if( color_weight==false )
-        {
-            c = (ambiant+diffuse_value)*color*(1-0.08*abs(fragment.normal.xyz)) + specular_value*white;
-        }
-        else{
-            float a = clamp(fragment.floppy_weight/2.0, 0.0,1.0);
-            c = (ambiant+diffuse_value)*vec3(1.0,1.0-a,1.0-a) + specular_value*white;
-        }
-        */
-    
-         // FOR COW meadow
-         c = (ambiant+diffuse_value)*color*texture_character_color + specular_value*white;
-    
-    
-    
-    //    float alpha = 1-clamp(-fragment.position_cam_space.z/20.0 , 0.0 , 1.0);
-    //    alpha = pow(alpha,4.0);
-    //    c = alpha * c + (1-alpha)*white;
-    
-        FragColor = vec4(c, color_alpha);
+    void main() {
+        FragColor = texture2D(map, vUv);
+        //FragColor = vec4(1.0, 0.0, 0.0, 1.0);
     }
 
   </script>
 
     <script id="vertexShader" type="x-shader/x-vertex">
 
-    #version 330 core
+    //#version 330 core
 
-
+/*
 layout (location = 0) in vec4 position;
 layout (location = 1) in vec4 normal;
 layout (location = 2) in vec2 texture_uv;
-
+*/
 out struct fragment_data
 {
     vec4 position;
@@ -102,73 +43,75 @@ out struct fragment_data
     float floppy_weight;
     vec2 texture_uv;
 } fragment;
-
+varying vec2 vUv;
+varying vec3 vNormal;
 
 // model transformation
-uniform vec3 translation = vec3(0.0, 0.0, 0.0);                      // user defined translation
-uniform mat3 rotation = mat3(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0); // user defined rotation
-uniform float scaling = 1.0;                                         // user defined scaling
-uniform vec3 scaling_axis = vec3(1.0,1.0,1.0);                       // user defined scaling
+uniform vec3 translation;// = vec3(0.0, 0.0, 0.0);                      // user defined translation
+uniform mat3 rotation;// = mat3(1.0,0.0,0.0, 0.0,1.0,0.0, 0.0,0.0,1.0); // user defined rotation
+uniform float scaling;// = 1.0;                                         // user defined scaling
+uniform vec3 scaling_axis;// = vec3(1.0,1.0,1.0);                       // user defined scaling
 uniform int N_vertex;
 uniform int N_joint;
-uniform float floppy_power = 1.0;
-uniform float squashy_power = 1.0;
+uniform float floppy_power;// = 1.0;
+uniform float squashy_power;// = 1.0;
 
 // view transform
 uniform mat4 view;
 // perspective matrix
 uniform mat4 perspective;
 
-
+precision lowp isampler2D;
 
 
 // Rest pose Skeleton
-uniform samplerBuffer tbo_sk0; // Rest-pose skeleton bones positions
+uniform sampler2D tbo_sk0; // Rest-pose skeleton bones positions
 
 
 // Data used for interactive mode (updated at each frame)
-uniform samplerBuffer tbo_sk;  // Current skeleton bones positions
-uniform samplerBuffer tbo_angular_velocity; // Current angular velocity of each bone
-uniform samplerBuffer tbo_linear_velocity;  // Current linear velocity of each bone
+uniform sampler2D tbo_sk;  // Current skeleton bones positions
+uniform sampler2D tbo_angular_velocity; // Current angular velocity of each bone
+uniform sampler2D tbo_linear_velocity;  // Current linear velocity of each bone
 
 
 // Skinning weights
-uniform isamplerBuffer texture_rig_joint; // Skinning rig - joints dependence
-uniform samplerBuffer texture_rig_weight; // Skinning rig - skinning weights
-uniform isamplerBuffer texture_rig_cumulative_index; // Skinning rig - index in lookup-table
-uniform isamplerBuffer texture_rig_size;             // Skinning rig - number of dependance for a given vertex
+uniform isampler2D texture_rig_joint; // Skinning rig - joints dependence
+uniform sampler2D texture_rig_weight; // Skinning rig - skinning weights
+uniform isampler2D texture_rig_cumulative_index; // Skinning rig - index in lookup-table
+uniform isampler2D texture_rig_size;             // Skinning rig - number of dependance for a given vertex
 
 // Velocity weights
-uniform isamplerBuffer texture_vs_rig_joint; // Velocity Skinning rig - joints dependence
-uniform samplerBuffer texture_vs_rig_weight; // Velocity Skinning rig - weights
-uniform isamplerBuffer texture_vs_rig_cumulative_index; // Velocity Skinning rig - index in lookup-table
-uniform isamplerBuffer texture_vs_rig_size;             // Skinning rig - number of dependance for a given vertex
+uniform isampler2D texture_vs_rig_joint; // Velocity Skinning rig - joints dependence
+uniform sampler2D texture_vs_rig_weight; // Velocity Skinning rig - weights
+uniform isampler2D texture_vs_rig_cumulative_index; // Velocity Skinning rig - index in lookup-table
+uniform isampler2D texture_vs_rig_size;             // Skinning rig - number of dependance for a given vertex
 
 
-uniform samplerBuffer texture_floppy_weights_raw; // per-vertex floppy weights
-uniform samplerBuffer texture_center_of_mass;  // Center of mass (in rest pose)
+//uniform sampler2D texture_floppy_weights_raw; // per-vertex floppy weights
+uniform sampler2D texture_center_of_mass;  // Center of mass (in rest pose)
 
 // Only used for instancing (cow meadow)
-uniform samplerBuffer texture_position_cow; // Instancing - position of the shape
-uniform samplerBuffer texture_angle_cow;    // Instancing - orientation of the shape
+//uniform sampler2D texture_position_cow; // Instancing - position of the shape
+//uniform sampler2D texture_angle_cow;    // Instancing - orientation of the shape
 
 // Only used for recorded animation
-uniform samplerBuffer texture_T_anim;      // Animation - deformation matrices
-uniform samplerBuffer texture_angular_velocity_anim; // Animation - angular velocities
-uniform samplerBuffer texture_linear_velocity_anim; // Animation - linear velocities
+//uniform sampler2D texture_T_anim;      // Animation - deformation matrices
+//uniform sampler2D texture_angular_velocity_anim; // Animation - angular velocities
+//uniform sampler2D texture_linear_velocity_anim; // Animation - linear velocities
 
 // switch to recorded animation
-uniform bool interactive_mode = true; 
+#define interactive_mode true 
 
-uniform bool floppy_weight_active = false;
-uniform bool floppy_limit = false;
-uniform bool gpu_velocity_skinning = true;
+#define floppy_weight_active false
+#define floppy_limit false
+#define gpu_velocity_skinning true
 
-uniform float t;
-uniform int N_time;
+#define t 0.0
+#define N_time 0.0
 
 
 int shuffle_time = 0;
+int max_texture_size = 8192;
 
 
 mat3 rotation_from_axis_angle(vec3 u, float angle)
@@ -179,7 +122,7 @@ mat3 rotation_from_axis_angle(vec3 u, float angle)
     float c = cos(angle);
     float s = sin(angle);
 
-    mat3 R = mat3(vec3(c+x*x*(1-c)  , y*x*(1-c)+z*s, z*x*(1-c)-y*s), vec3(x*y*(1-c)-z*s, c+y*y*(1-c), z*y*(1-c)+x*s), vec3(x*z*(1-c)+y*s, y*z*(1-c)-x*s, c+z*z*(1-c)) );
+    mat3 R = mat3(vec3(c+x*x*(1.0-c)  , y*x*(1.0-c)+z*s, z*x*(1.0-c)-y*s), vec3(x*y*(1.0-c)-z*s, c+y*y*(1.0-c), z*y*(1.0-c)+x*s), vec3(x*z*(1.0-c)+y*s, y*z*(1.0-c)-x*s, c+z*z*(1.0-c)) );
     return R;
 }
 
@@ -190,7 +133,7 @@ mat3 rotation_between_vector(vec3 a, vec3 b)
     vec3 u1 = normalize(b);
 
     if( length(u0-u1)<1e-4f || length(u0+u1)<1e-4f )
-        return mat3( vec3(1,0,0), vec3(0,1,0), vec3(0,0,1) );
+        return mat3( vec3(1.0,0.0,0.0), vec3(0.0,1.0,0.0), vec3(0.0,0.0,1.0) );
 
     float d = dot(u0,u1);
     float angle = acos( d );
@@ -201,23 +144,23 @@ mat3 rotation_between_vector(vec3 a, vec3 b)
 }
 
 
-mat4 mat4_from_texture(samplerBuffer s, int k)
+mat4 mat4_from_texture(sampler2D s, int k)
 {
-        float xx = texelFetch(s, 16*k+0).r; float xy = texelFetch(s, 16*k+1).r; float xz = texelFetch(s, 16*k+2).r; float xw = texelFetch(s, 16*k+3).r;
-        float yx = texelFetch(s, 16*k+4).r; float yy = texelFetch(s, 16*k+5).r; float yz = texelFetch(s, 16*k+6).r; float yw = texelFetch(s, 16*k+7).r;
-        float zx = texelFetch(s, 16*k+8).r; float zy = texelFetch(s, 16*k+9).r; float zz = texelFetch(s, 16*k+10).r; float zw = texelFetch(s, 16*k+11).r;
-        float wx = texelFetch(s, 16*k+12).r; float wy = texelFetch(s, 16*k+13).r; float wz = texelFetch(s, 16*k+14).r; float ww = texelFetch(s, 16*k+15).r;
-
+    float xx = texelFetch(s, ivec2(4*k+0, 0), 0).r; float xy = texelFetch(s, ivec2(4*k+0, 0), 0).g; float xz = texelFetch(s, ivec2(4*k+0, 0), 0).b; float xw = texelFetch(s, ivec2(4*k+0, 0), 0).a;
+    float yx = texelFetch(s, ivec2(4*k+1, 0), 0).r; float yy = texelFetch(s, ivec2(4*k+1, 0), 0).g; float yz = texelFetch(s, ivec2(4*k+1, 0), 0).b; float yw = texelFetch(s, ivec2(4*k+1, 0), 0).a;
+    float zx = texelFetch(s, ivec2(4*k+2, 0), 0).r; float zy = texelFetch(s, ivec2(4*k+2, 0), 0).g; float zz = texelFetch(s, ivec2(4*k+2, 0), 0).b; float zw = texelFetch(s, ivec2(4*k+2, 0), 0).a;
+    float wx = texelFetch(s, ivec2(4*k+3, 0), 0).r; float wy = texelFetch(s, ivec2(4*k+3, 0), 0).g; float wz = texelFetch(s, ivec2(4*k+3, 0), 0).b; float ww = texelFetch(s, ivec2(4*k+3, 0), 0).a;
+    
         return mat4(vec4(xx,yx,zx,wx), vec4(xy,yy,zy,wy), vec4(xz,yz,zz,wz), vec4(xw,yw,zw,ww));
 }
-vec3 translation_from_mat4_texture(samplerBuffer s, int k)
+vec3 translation_from_mat4_texture(sampler2D s, int k)
 {
-        float xx = texelFetch(s, 16*k+0).r; float xy = texelFetch(s, 16*k+1).r; float xz = texelFetch(s, 16*k+2).r; float xw = texelFetch(s, 16*k+3).r;
-        float yx = texelFetch(s, 16*k+4).r; float yy = texelFetch(s, 16*k+5).r; float yz = texelFetch(s, 16*k+6).r; float yw = texelFetch(s, 16*k+7).r;
-        float zx = texelFetch(s, 16*k+8).r; float zy = texelFetch(s, 16*k+9).r; float zz = texelFetch(s, 16*k+10).r; float zw = texelFetch(s, 16*k+11).r;
-        float wx = texelFetch(s, 16*k+12).r; float wy = texelFetch(s, 16*k+13).r; float wz = texelFetch(s, 16*k+14).r; float ww = texelFetch(s, 16*k+15).r;
+        float xx = texelFetch(s, ivec2(4*k+0, 0), 0).r; float xy = texelFetch(s, ivec2(4*k+0, 0), 0).g; float xz = texelFetch(s, ivec2(4*k+0, 0), 0).b; float xw = texelFetch(s, ivec2(4*k+0, 0), 0).a;
+        float yx = texelFetch(s, ivec2(4*k+1, 0), 0).r; float yy = texelFetch(s, ivec2(4*k+1, 0), 0).g; float yz = texelFetch(s, ivec2(4*k+1, 0), 0).b; float yw = texelFetch(s, ivec2(4*k+1, 0), 0).a;
+        float zx = texelFetch(s, ivec2(4*k+2, 0), 0).r; float zy = texelFetch(s, ivec2(4*k+2, 0), 0).g; float zz = texelFetch(s, ivec2(4*k+2, 0), 0).b; float zw = texelFetch(s, ivec2(4*k+2, 0), 0).a;
+        float wx = texelFetch(s, ivec2(4*k+3, 0), 0).r; float wy = texelFetch(s, ivec2(4*k+3, 0), 0).g; float wz = texelFetch(s, ivec2(4*k+3, 0), 0).b; float ww = texelFetch(s, ivec2(4*k+3, 0), 0).a;
 
-        return vec3(texelFetch(s, 16*k+3).r, texelFetch(s, 16*k+7).r, texelFetch(s, 16*k+11).r);
+        return vec3(texelFetch(s, ivec2(4*k+0), 0).a, texelFetch(s, ivec2(4*k+1), 0).a, texelFetch(s, ivec2(4*k+3), 0).a);
 }
 
 
@@ -229,7 +172,7 @@ void global_transform(out mat4 Sm, out mat4 Rm, out vec4 Tm)
     Rm = mat4(rotation);
     Tm = vec4(translation,0.0);
 }
-
+/*
 void global_transform_instances(inout mat4 Sm, inout mat4 Rm, inout vec4 Tm)
 {
     vec3 translate_instance = vec3(texelFetch(texture_position_cow, 3*gl_InstanceID).r, texelFetch(texture_position_cow, 3*gl_InstanceID+1).r, texelFetch(texture_position_cow, 3*gl_InstanceID+2).r);
@@ -237,7 +180,7 @@ void global_transform_instances(inout mat4 Sm, inout mat4 Rm, inout vec4 Tm)
     float angle_instance = texelFetch(texture_angle_cow,gl_InstanceID).r;
     mat4 R_instance = mat4(vec4(cos(angle_instance),sin(angle_instance),0.0,0.0),vec4(-sin(angle_instance),cos(angle_instance),0.0,0.0),vec4(0.0,0.0,1.0,0.0),vec4(0.0,0.0,0.0,1.0));
     Rm = R_instance * Rm;
-}
+}*/
 
 
 //**********************************************************************//
@@ -248,21 +191,27 @@ void LBS(in vec4 p0, in vec4 n0, inout vec4 p_skinning, inout vec4 p_skinning_no
 {
     p_skinning = vec4(0.0);
     p_skinning_normal = vec4(0.0);
-
-    int offset = texelFetch(texture_rig_cumulative_index, gl_VertexID).r;
-    int N_dependency = texelFetch(texture_rig_size, gl_VertexID).r;
+    int mod_vertexID = int(mod(float(gl_VertexID), 4.0));
+    int floor_vertexID = int(float(gl_VertexID)/float(4));
+    int offset = texelFetch(texture_rig_cumulative_index, ivec2(floor_vertexID, 0), 0)[mod_vertexID];
+    int N_dependency = texelFetch(texture_rig_size, ivec2(floor_vertexID, 0), 0)[mod_vertexID];
     for(int k_dep=0; k_dep<N_dependency; ++k_dep)
     {
-        int joint = texelFetch(texture_rig_joint, offset+k_dep).r;
-        float w = texelFetch(texture_rig_weight, offset+k_dep).r;
+        int mod_offset = int(mod(float(offset+k_dep), 4.0));
+        int floor_offset = int(float(offset+k_dep)/float(4));
+        int joint = texelFetch(texture_rig_joint, ivec2(floor_offset, 0), 0)[mod_offset];
+        float w = texelFetch(texture_rig_weight, ivec2(floor_offset, 0), 0)[mod_offset];
 
         mat4 T;
+        //Ewen's note : remove interactive_mode condition and set T = mat4_from_texture(tbo_sk, joint); ?
         if(interactive_mode){
             T = mat4_from_texture(tbo_sk, joint);
         }
+        /*
         else {
             T = mat4_from_texture(texture_T_anim, joint + (N_joint * int(shuffle_time)) );
         }
+        */
         mat4 T0 = mat4_from_texture(tbo_sk0, joint);
         
         p_skinning += w * T * T0 * p0;
@@ -299,9 +248,9 @@ vec3 velocity_skinning_squashy_rotation(vec3 omega, vec3 p_joint, vec3 p_vertex,
     float vertex_speed_norm = length(omega) * length(u_joint);
 
     float squash_factor = squashy_magnitude * vertex_speed_norm;
-    float elongation = 1+squash_factor;
-    float squeeze = 1/(1+squash_factor);
-    mat3  S = mat3( vec3(elongation,0,0), vec3(0,squeeze,0), vec3(0,0,squeeze) );
+    float elongation = 1.0+squash_factor;
+    float squeeze = 1.0/(1.0+squash_factor);
+    mat3  S = mat3( vec3(elongation,0.0,0.0), vec3(0.0,squeeze,0.0), vec3(0.0,0.0,squeeze) );
 
     // Rotate to correct frame
     vec3 un_angular_velocity = normalize(omega);
@@ -333,12 +282,12 @@ vec3 velocity_skinning_floppy_translation(float floppy_magnitude, vec3 linear_sp
 vec3 velocity_skinning_squashy_translation(float squashy_magnitude, vec3 linear_speed, vec3 center_of_mass, vec3 p_vertex)
 {
     float squash_factor = squashy_magnitude * length(linear_speed);
-    float elongation_scaling = 1+squash_factor;
-    float squeeze_scaling = 1/sqrt(1+squash_factor);
+    float elongation_scaling = 1.0+squash_factor;
+    float squeeze_scaling = 1.0/sqrt(1.0+squash_factor);
 
     mat3 Id = mat3(1.0);
-    mat3 S = mat3(vec3(elongation_scaling,0,0), vec3(0,squeeze_scaling,0), vec3(0,0,squeeze_scaling)); // Scaling
-    mat3 R = rotation_between_vector(vec3(1,0,0), normalize(linear_speed) ); // Rotation to the correct frame
+    mat3 S = mat3(vec3(elongation_scaling,0.0,0.0), vec3(0.0,squeeze_scaling,0.0), vec3(0.0,0.0,squeeze_scaling)); // Scaling
+    mat3 R = rotation_between_vector(vec3(1.0,0.0,0.0), normalize(linear_speed) ); // Rotation to the correct frame
     mat3 T = R * S * transpose(R); // Deformation matrix
 
     return (T-Id)*(p_vertex-center_of_mass);
@@ -347,29 +296,38 @@ vec3 velocity_skinning_squashy_translation(float squashy_magnitude, vec3 linear_
 
 void retrieve_joint_info(in int k_joint, out mat4 T, out vec3 angular_velocity, out vec3 linear_velocity)
 {
+    //Ewen's note : remove interactive mode condition or set it by default, use RGB values instead of index change.
     if(interactive_mode) {
-        angular_velocity = vec3(texelFetch(tbo_angular_velocity, 3*k_joint+0).r,texelFetch(tbo_angular_velocity, 3*k_joint+1).r,texelFetch(tbo_angular_velocity, 3*k_joint+2).r);//+0.01*angular_velocity[k_joint];
-        linear_velocity = vec3(texelFetch(tbo_linear_velocity, 3*k_joint+0).r,texelFetch(tbo_linear_velocity, 3*k_joint+1).r,texelFetch(tbo_linear_velocity, 3*k_joint+2).r);//+0.01*angular_velocity[k_joint];
+        angular_velocity = vec3(texelFetch(tbo_angular_velocity, ivec2(3*k_joint+0, 0), 0).r,texelFetch(tbo_angular_velocity, ivec2(3*k_joint+0, 0), 0).g,texelFetch(tbo_angular_velocity, ivec2(3*k_joint+0, 0), 0).b);//+0.01*angular_velocity[k_joint];
+        linear_velocity = vec3(texelFetch(tbo_linear_velocity, ivec2(3*k_joint+0, 0), 0).r,texelFetch(tbo_linear_velocity, ivec2(3*k_joint+0, 0), 0).g,texelFetch(tbo_linear_velocity, ivec2(3*k_joint+0, 0), 0).b);//+0.01*angular_velocity[k_joint];
         T = mat4_from_texture(tbo_sk, k_joint);
     }
+    /*
     else {
         angular_velocity = vec3(texelFetch(texture_angular_velocity_anim, (3*k_joint+0)+3*N_joint*int(shuffle_time)).r,texelFetch(texture_angular_velocity_anim, 3*k_joint+1+3*N_joint*int(shuffle_time)).r,texelFetch(texture_angular_velocity_anim, 3*k_joint+2+3*N_joint*int(shuffle_time)).r);
         linear_velocity = vec3(texelFetch(texture_linear_velocity_anim, (3*k_joint+0)+3*N_joint*int(shuffle_time)).r,texelFetch(texture_linear_velocity_anim, 3*k_joint+1+3*N_joint*int(shuffle_time)).r,texelFetch(texture_linear_velocity_anim, 3*k_joint+2+3*N_joint*int(shuffle_time)).r);
         T = mat4_from_texture(texture_T_anim, k_joint + (N_joint * int(shuffle_time)) );
     }
+    */
 }
 
 
 void velocity_skinning(in float floppy_weight_vertex, in vec3 p_skinning3d, inout vec3 p_deformed3d)
 {
-    int vs_offset = texelFetch(texture_vs_rig_cumulative_index, gl_VertexID).r;
-    int vs_N_dependency = texelFetch(texture_vs_rig_size, gl_VertexID).r;
+    int mod_vertexID = int(mod(float(gl_VertexID), 4.0));
+    int floor_vertexID = int(float(gl_VertexID)/float(4));
+    int vs_offset = texelFetch(texture_vs_rig_cumulative_index, ivec2(floor_vertexID, 0), 0)[mod_vertexID];
+    int vs_N_dependency = texelFetch(texture_vs_rig_size, ivec2(floor_vertexID, 0), 0)[mod_vertexID];
 
     for(int k_dep=0; k_dep<vs_N_dependency; ++k_dep)
     {
-        int k_joint = texelFetch(texture_vs_rig_joint, vs_offset+k_dep).r; // current joint
-        float w = texelFetch(texture_vs_rig_weight, vs_offset+k_dep).r;    // velocity-skinning weight
-        vec3 center_of_mass = vec3(texelFetch(texture_center_of_mass, 3*k_joint+0).r,texelFetch(texture_center_of_mass, 3*k_joint+1).r,texelFetch(texture_center_of_mass, 3*k_joint+2).r);
+        int mod_offset = int(mod(float(vs_offset+k_dep), 4.0));
+        int floor_offset = int(mod(float(vs_offset+k_dep)/float(4), float(max_texture_size)));
+        int line_offset = int((float(vs_offset+k_dep)/float(4))/float(max_texture_size));
+
+        int k_joint = texelFetch(texture_vs_rig_joint, ivec2(floor_offset, 0), line_offset)[mod_offset]; // current joint
+        float w = texelFetch(texture_vs_rig_weight, ivec2(floor_offset, 0), line_offset)[mod_offset];    // velocity-skinning weight
+        vec3 center_of_mass = vec3(texelFetch(texture_center_of_mass, ivec2(3*k_joint+0, 0), 0).r,texelFetch(texture_center_of_mass, ivec2(3*k_joint+0, 0), 0).g, texelFetch(texture_center_of_mass, ivec2(3*k_joint+0, 0), 0).b);
 
         mat4 T;vec3 angular_velocity, linear_velocity; // position and velocity of joint
         retrieve_joint_info(k_joint, T, angular_velocity, linear_velocity);
@@ -411,19 +369,19 @@ void main()
     mat4 Rm = mat4(1.0); 
     vec4 Tm = vec4(0.0);
     global_transform(Sm, Rm, Tm);
-    global_transform_instances(Sm, Rm, Tm);
+    //global_transform_instances(Sm, Rm, Tm);
     
 
 
 
 
     // Shuffle time for instanciated anim
-    shuffle_time = int( mod(t+gl_InstanceID,N_time-1));// int(mod(int(t)+23154*gl_InstanceID+gl_InstanceID*15,N_time-1));
+    //shuffle_time = int( mod(t+gl_InstanceID,N_time-1));// int(mod(int(t)+23154*gl_InstanceID+gl_InstanceID*15,N_time-1));
 
     // Compute Linear Blend Skinning
-    vec4 p_skinning = position;
+    vec4 p_skinning = vec4(position, 0.0);
     vec4 p_skinning_normal = vec4(normal.xyz,0.0);
-    LBS(position, vec4(normal.xyz,0.0), p_skinning, p_skinning_normal);
+    LBS(vec4(position, 0.0), vec4(normal.xyz,0.0), p_skinning, p_skinning_normal);
     vec3 p_skinning3d = p_skinning.xyz;
     vec3 p_deformed3d = p_skinning3d;
 
@@ -432,11 +390,12 @@ void main()
     float floppy_weight_vertex = 1.0f;
     
     if(gpu_velocity_skinning==true)
-    {
+    {  
+        /*
         if(floppy_weight_active) {
             floppy_weight_vertex = texelFetch(texture_floppy_weights_raw,gl_VertexID).r;
         }
-
+        */
         velocity_skinning(floppy_weight_vertex,p_skinning3d,p_deformed3d);
     }
     
@@ -446,10 +405,12 @@ void main()
     p_skinning_normal = normalize(p_skinning_normal);
     vec4 position_deformed = Rm*Sm*vec4(p_deformed3d,1.0)+Tm;
     fragment.normal = Rm*p_skinning_normal;
+    vNormal = vec3((Rm*p_skinning_normal).x, (Rm*p_skinning_normal).y, (Rm*p_skinning_normal).z);
     fragment.position = position_deformed;
-    fragment.color = vec4(floppy_weight_vertex,0,0,0);
+    fragment.color = vec4(floppy_weight_vertex,0.0,0.0,0.0);
     fragment.position_cam_space = view * position_deformed;
-    fragment.texture_uv = texture_uv;
+    
+    //fragment.texture_uv = vec2(0.0, 0.0);
     fragment.floppy_weight = floppy_weight_vertex;
     gl_Position = perspective * fragment.position_cam_space;
 }

@@ -133,7 +133,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					var rootJoint = getRoot(child.skeleton.bones[0]);
 					var rootJointIndex = rootBonesUUID.indexOf(rootJoint.uuid);
 					if(rootJointIndex !== -1) {
-						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations));
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera));
 					} else {
 						jointArray = [rootJoint];
 						indexJointRecursive(rootJoint);
@@ -142,7 +142,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 						}
 						bonesArray.push(jointArray);
 						rootBonesUUID.push(rootJoint.uuid);
-						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations));
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera));
 
 					}
 

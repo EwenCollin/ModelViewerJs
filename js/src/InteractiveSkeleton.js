@@ -3,10 +3,13 @@ import * as THREE from '../../build/three.module.js';
 import { TransformControls } from '../jsm/controls/TransformControls.js';
 import { computeVelocitySkinningDeformation } from './VelocitySkinning.js';
 import { VertexMotionHelper } from './VertexMotionHelper.js';
+import { ShaderHelper } from './ShaderHelper.js';
 
-var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations) {
+var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations, camera) {
     var self = this;
     self.skinnedMesh = skinnedMesh;
+    self.shaderHelper;
+    self.camera = camera;
     console.log(skeleton);
     self.animations = animations;
     console.log("ANIMATIONS:", self.animations);
@@ -315,7 +318,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
         }
         self.setSkeletonVisibility(false);
         self.prepareVSData();
-        
+        self.shaderHelper = new ShaderHelper(this);
+        self.shaderHelper.generateShader();
         //self.skeletonMesh.attach(self.angular_velocity_helper);
         console.log(self.boneToJointIndices);
     }
@@ -461,6 +465,10 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
                 "center_of_mass": [],
                 "vertex_depending_on_joint": [],
                 "vertex_weight_depending_on_joint": [],
+                "vertex_joint_index": [],
+                "vertex_joint_weight": [],
+                "vertex_joint_size": [],
+                "vertex_joint_cumulative_index": [],
                 "reverse_vertex_depending_on_joint": [],
                 "reverse_vertex_weight_depending_on_joint": [],
                 "speed_tracker": [],
@@ -507,6 +515,9 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
 
         var vertexVelocitySkinningWeights = [];
         var vertexVelocitySkinningJointsIdx = [];
+        var vertexVelocitySkinningSize = [];
+        var vertexVelocitySkinningCumulativeIndex = [];
+        var lastIndex = 0;
         for(var Kvertex = 0; Kvertex < self.initialPositions.count; Kvertex++) {
             var vertexWeights = [];
             var vertexJointsIdx = [];
@@ -534,16 +545,22 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
                     }
                 }
             }
-            vertexVelocitySkinningWeights.push(vertexWeights);
-            vertexVelocitySkinningJointsIdx.push(vertexJointsIdx);
+            vertexVelocitySkinningWeights.push(...vertexWeights);
+            vertexVelocitySkinningJointsIdx.push(...vertexJointsIdx);
             for(var Kj = 0; Kj < vertexJointsIdx.length; Kj++) {
                 var jointIdx = vertexJointsIdx[Kj];
                 model["velocity_skinning"]["vertex_depending_on_joint"][jointIdx].push(Kvertex);
                 model["velocity_skinning"]["vertex_weight_depending_on_joint"][jointIdx].push(vertexWeights[Kj]);
             }
+            vertexVelocitySkinningSize.push(vertexJointsIdx.length);
+            vertexVelocitySkinningCumulativeIndex.push(lastIndex + vertexJointsIdx.length);
+            lastIndex = lastIndex + vertexJointsIdx.length;
         }
+        model["velocity_skinning"]["vertex_joint_size"] = vertexVelocitySkinningSize;
+        model["velocity_skinning"]["vertex_joint_index"] = vertexVelocitySkinningJointsIdx;
+        model["velocity_skinning"]["vertex_joint_weight"] = vertexVelocitySkinningWeights;
+        model["velocity_skinning"]["vertex_joint_cumulative_index"] = vertexVelocitySkinningCumulativeIndex;
         console.log(vertexVelocitySkinningJointsIdx);
-        console.log(vertexVelocitySkinningWeights);
         
         for(var Kj = 0; Kj < self.skeleton.bones.length; Kj++) {
             model["velocity_skinning"]["reverse_vertex_depending_on_joint"].push([]);
@@ -572,6 +589,30 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
                         }
                     }
                 }
+            }
+        }
+
+        const N_joint = model["velocity_skinning"]["reverse_vertex_depending_on_joint"].length;
+        for (let k_joint = 0; k_joint < N_joint; ++k_joint) {
+            model["velocity_skinning"]["center_of_mass"][k_joint].set(0, 0, 0);
+        }
+
+        const com_temp = new THREE.Vector3();
+        for (let k_joint = 0; k_joint < N_joint; ++k_joint) {
+            const vertex_dependency = model["velocity_skinning"]["reverse_vertex_depending_on_joint"][k_joint];
+            const weight_dependency = model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][k_joint];
+            const N_dependency = vertex_dependency.length;
+
+            for (let k_dep = 0; k_dep < N_dependency; ++k_dep) {
+                const idx_vertex = vertex_dependency[k_dep];
+                const w_skinning = weight_dependency[k_dep];
+                const p_vertex = model["vertex_skinning"][idx_vertex];
+
+                com_temp.copy(p_vertex);
+                com_temp.multiplyScalar(w_skinning);
+                com_temp.divideScalar(N_dependency);
+
+                model["velocity_skinning"]["center_of_mass"][k_joint].add(com_temp);
             }
         }
         
@@ -889,9 +930,9 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
         self.updateBindedSkeleton();
         self.updateRepr();
 
-
-        self.updateGeometry();
-        self.updateGeometryVS();
+        self.shaderHelper.tick();
+        //self.updateGeometry();
+        //self.updateGeometryVS();
         self.updateScaleUnit();
     }
     self.init();
