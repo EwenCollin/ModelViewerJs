@@ -107,7 +107,7 @@ function computeVelocitySkinningDeformation(model) {
                     const p_vertex = model["vertex_skinning"][idx_vertex];
 
                     const w_flappy = 0.4 */*model["velocity_skinning"]["flappy_weight"][idx_vertex]**/model["param"]["flappy"];
-                    if (Math.abs(w_flappy) > 0.01) {
+                    if (Math.abs(w_flappy) > 0.001) {
                         deformation_flappy.copy(linear_speed);
                         deformation_flappy.multiplyScalar(-w_flappy);
 
@@ -118,7 +118,7 @@ function computeVelocitySkinningDeformation(model) {
 
                     // Squashy
                     const squash_factor = 0.2 * linear_speed_norm */*sceneElements.param["Squashy"]**/model["param"]["squashy"];
-                    if (Math.abs(squash_factor) > 0.01) {
+                    if (Math.abs(squash_factor) > 0.001) {
                         const elongation_scaling = 1.0 + squash_factor;
                         const squeeze_scaling = 1 / Math.sqrt(1 + squash_factor);
 
@@ -176,7 +176,7 @@ function computeVelocitySkinningDeformation(model) {
 
                     const w_flappy = /*model["velocity_skinning"]["flappy_weight"][idx_vertex]**/model["param"]["flappy"];
 
-                    if (Math.abs(w_flappy) > 0.01) {
+                    if (Math.abs(w_flappy) > 0.001) {
                         const angle = - w_flappy * vertex_speed_norm * 0.4; // * sceneElements.param['Flappy'];
 
                         deformation_flappy.copy(p_vertex).sub(rotation_center);
@@ -192,7 +192,7 @@ function computeVelocitySkinningDeformation(model) {
 
                     // Squashy
                     const squash_factor = 0.2 * vertex_speed_norm */*sceneElements.param["Squashy"]**/model["param"]["squashy"];
-                    if (Math.abs(squash_factor) > 0.01) {
+                    if (Math.abs(squash_factor) > 0.001) {
                         const elongation_scaling = 1.0 + squash_factor;
                         const squeeze_scaling = 1 / (1 + squash_factor);
 
