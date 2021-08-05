@@ -68,10 +68,10 @@ var UserInterface = function(domElement, interaction) {
             self.dom["bone-dropdown"].classList.toggle("show-animation-item");
         });
         self.dom["bone-vs-enable-all"].addEventListener("click", function() {
-            self.toggleJoint(null, null, false);
+            self.toggleJoint(null, null, true);
         });
         self.dom["bone-vs-disable-all"].addEventListener("click", function() {
-            self.toggleJoint(null, null, true);
+            self.toggleJoint(null, null, false);
         });
     }
 
@@ -141,7 +141,7 @@ var UserInterface = function(domElement, interaction) {
                 self.dom["bone-dropdown"].appendChild(boneElement);
                 boneElement.addEventListener("click", function() {
                     self.selectedJoint = [parseInt(this.getAttribute("isk-index")), parseInt(this.getAttribute("joint-index"))];
-                    self.toggleJoint(self.selectedJoint[0], self.selectedJoint[1], !this.classList.contains("bone-disabled"));
+                    self.toggleJoint(self.selectedJoint[0], self.selectedJoint[1], this.classList.contains("bone-disabled"));
                 });
                 boneElement.addEventListener("mouseover", function() {
                     self.currentInteractiveSkeleton[parseInt(this.getAttribute("isk-index"))].setBoneReprColor(parseInt(this.getAttribute("joint-index")), new THREE.Color(0xFFFF00));

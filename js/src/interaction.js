@@ -51,14 +51,21 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.assembleObjects = function() {
         var rObjects = [];
         for(var i = 0;i < self.objects.length; i++) {
-            rObjects.push(self.objects[i].box);
+            rObjects.push(self.objects[i].group);
         }
         return rObjects;
     }
     
     self.retrieveSelectedObject = function(object) {
         for(var i = 0; i < self.objects.length; i++) {
-            if(self.objects[i].box.uuid === object.uuid) {
+            var parentArray = [];
+            function parentUUIDArray(object) {
+                parentArray.push(object.uuid);
+                if(object.parent) parentUUIDArray(object.parent);
+            }
+            parentUUIDArray(object);
+
+            if(parentArray.indexOf(self.objects[i].group.uuid) !== -1) {
                 return self.objects[i];
             }
         }

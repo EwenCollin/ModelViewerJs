@@ -126,7 +126,6 @@ function init() {
 
 function onClick(event) {
 	interaction.select(new THREE.Vector2(event.clientX, event.clientY));
-	console.log("hello");
 }
 
 function onMouseUp(event) {

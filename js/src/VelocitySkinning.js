@@ -73,7 +73,7 @@ function computeVelocitySkinningDeformation(model) {
 
     // Naviguate through all joints - then only deform vertices depending on this joint velocity
     for (let k_joint = 0; k_joint < N_joint; ++k_joint) {
-        if (model["param"]["disabled_bones"].indexOf(k_joint) !== -1) {
+        if (model["param"]["disabled_bones"].indexOf(k_joint) === -1) {
             const p_joint = model["skeleton_current"]["position_global"][k_joint];
             const linear_speed = model["velocity_skinning"]["speed_tracker"][k_joint].current_speed;
             const angular_speed = model["velocity_skinning"]["rotation_tracker"][k_joint].current_speed;

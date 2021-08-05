@@ -7,7 +7,7 @@ import { VertexMotionHelper } from './VertexMotionHelper.js';
 var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations) {
     var self = this;
     self.skinnedMesh = skinnedMesh;
-    
+    console.log(skeleton);
     self.animations = animations;
     console.log("ANIMATIONS:", self.animations);
 
@@ -110,7 +110,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
             self.velocity_skinning_data["param"]["disabled_joints"] = [];
             if(!enabled) {
                 for(var j in self.joints) {
-                    self.velocity_skinning_data["param"]["disabled_joints"].push(parseInt(self.joints[j].index));
+                    self.velocity_skinning_data["param"]["disabled_joints"].push(parseInt(j));
                 }
             }
         } else {
@@ -122,10 +122,11 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
                 self.velocity_skinning_data["param"]["disabled_joints"].push(joint);
             }
         }
+        self.updateDisabledBones();
     }
 
     self.getToggleJointVS = function(joint) {
-        return self.velocity_skinning_data["param"]["disabled_joints"].indexOf(joint) !== -1;
+        return self.velocity_skinning_data["param"]["disabled_joints"].indexOf(joint) === -1;
     }
 
     self.updateDisabledBones = function() {
@@ -244,6 +245,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
                 matrix: jointArray[j].matrix.clone(),
                 index: retrieveSkeletonIndexFromBoneObject(self.skeleton, jointArray[j]),
                 boneObject: jointArray[j],
+                globalBoneObject: self.skeleton.global[j],
                 matrixWorld: new THREE.Matrix4(),
                 animation: {
                     position: new THREE.Vector3(),
@@ -792,20 +794,20 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
 
     self.updateBindedSkeleton = function() {
         for(var j in self.joints) {
-            self.joints[j].boneObject.matrixAutoUpdate = false;
-            self.joints[j].boneObject.matrix.copy(self.joints[j].matrix);
-            self.joints[j].matrix.decompose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
+            self.joints[j].globalBoneObject.matrixAutoUpdate = false;
+            self.joints[j].globalBoneObject.matrix.copy(self.joints[j].matrix);
+            //self.joints[j].matrix.decompose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
         }
     }
     self.updateJointsFromBindedSkeleton = function() {
         for(var j in self.joints) {
-            self.joints[j].boneObject.matrix.compose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
-            self.joints[j].matrix.compose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
+            self.joints[j].matrix.copy(self.joints[j].globalBoneObject.matrix);
+            //self.joints[j].boneObject.matrix.compose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
+            //self.joints[j].matrix.compose(self.joints[j].boneObject.position, self.joints[j].boneObject.quaternion, self.joints[j].boneObject.scale);
         }
     }
 
     self.onAfterInteraction = function(mouse) {
-        //self.updateTransformSelection(self.boneArray[boneIndex]);
     }
 
     self.updateScaleUnit = function() {
@@ -879,8 +881,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
         
         self.updateJointsFromBindedSkeleton();
         self.applyTransform();
-        //console.log();
-        //console.log(self.joints[1].boneObject.quaternion);
+
         if(self.PARAMS.playAnimation) {
             //self.animationMixer.update(1/60);
             self.interpolateJointsFromAnimation(self.animations[self.PARAMS.selectedAnimation]);

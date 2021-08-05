@@ -18,6 +18,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 	self.animations;
 	self.interactiveSkeletons = [];
 	self.group;
+	self.globalBoneArray;
 
 	self.getTransformGroup = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
@@ -76,6 +77,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		object.updateMatrixWorld();
 		
 		const box = new THREE.BoxHelper(object, 0xffff00);
+		box.geometry.computeBoundingSphere();
 		var radius = box.geometry.boundingSphere.radius;
 		object.scale.multiplyScalar(120/radius);
         //object.position.set(self.index*200, 0, 0);
@@ -88,13 +90,13 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.text.material.depthTest = false;
 
 		box.update();
+		box.scale.multiplyScalar(radius/120);
 		box.geometry.computeBoundingBox();
 		const boxRaycast = new THREE.Mesh(self.makeBoxBufferGeometry(new THREE.Vector3(box.geometry.attributes.position.array[0], box.geometry.attributes.position.array[1], box.geometry.attributes.position.array[2]), new THREE.Vector3(box.geometry.attributes.position.array[3], box.geometry.attributes.position.array[7], box.geometry.attributes.position.array[14])), new THREE.MeshBasicMaterial(0x00ffff));
 		boxRaycast.layers.enable(1);
 		object.attach(boxRaycast);
 		object.attach(box);
 		console.log(box);
-		box.scale.multiplyScalar(radius/120);
 		box.position.copy(object.position);
 		self.boxHelper = box;
 		self.box = boxRaycast;
@@ -103,13 +105,48 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.setPosition(new THREE.Vector3(0, 0, index*200));
 		var skinnedMeshToRemove = [];
 		var meshToAdd = [];
+
+		var rootBonesUUID = [];
+		var bonesArray = [];
+		var getRoot = function(child) {
+            if(child.parent && child.parent.isBone) return getRoot(child.parent);
+            return child;
+        }
+		var jointArray = [];
+        var indexJointRecursive = function(parentJoint) {
+            for(var c in parentJoint.children) {
+                jointArray.push(parentJoint.children[c]);
+                indexJointRecursive(parentJoint.children[c]);
+            }
+        }
+
+
 		object.traverse( function ( child ) {
 			if ( child.isMesh ) {
 				child.material.metalness = 0;
 				if (child.skeleton) {
+
 					child.updateMatrix();
 					child.updateMatrixWorld();
 					console.log(child);
+					
+					var rootJoint = getRoot(child.skeleton.bones[0]);
+					var rootJointIndex = rootBonesUUID.indexOf(rootJoint.uuid);
+					if(rootJointIndex !== -1) {
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations));
+					} else {
+						jointArray = [rootJoint];
+						indexJointRecursive(rootJoint);
+						for(var b in jointArray) {
+							jointArray[b] = jointArray[b].clone();
+						}
+						bonesArray.push(jointArray);
+						rootBonesUUID.push(rootJoint.uuid);
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations));
+
+					}
+
+					/*
 					skinnedMeshToRemove.push(child);
 					var mat = child.material;
 					//Array.isArray(mat) ? mat.reduce(function(acc, m){ acc.push(m.clone()); }, []) : mat.clone();
@@ -121,10 +158,11 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					//child.skeleton.pose();
 					self.interactiveSkeletons.push(new InteractiveSkeleton(clonedMesh, child.skeleton, object, self.animations));
 					skinnedMeshToRemove.push(child);
-					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));
+					//child.add(new THREE.SkeletonHelper(child.skeleton.bones[0]));*/
 				}
 			}
 		});
+		/*
 		for(var i in skinnedMeshToRemove) {
 			object.remove(skinnedMeshToRemove[i]);
 			object.traverse(function(child) {
@@ -133,8 +171,9 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		}
 		for(var i in meshToAdd) {
 			object.attach(meshToAdd[i]);
-		}
+		}*/
 		self.group = object;
+		self.globalBoneArray = bonesArray;
 		console.log(self);
     }
 
