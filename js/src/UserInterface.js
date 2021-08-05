@@ -1,4 +1,4 @@
-
+import * as THREE from '../../build/three.module.js';
 
 var UserInterface = function(domElement, interaction) {
     var self = this;
@@ -10,7 +10,7 @@ var UserInterface = function(domElement, interaction) {
     self.selectedJoint = [];
 
     self.dom = {}
-    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown"];
+    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
 
     self.init = function() {
         for(var d in self.domList) {
@@ -29,6 +29,9 @@ var UserInterface = function(domElement, interaction) {
         });
         self.dom["vs-squashy-power"].addEventListener("change", function() {
             self.setSquashingPower(self.dom["vs-squashy-power"].value);
+        });
+        self.dom["vs-global-power"].addEventListener("change", function() {
+            self.setGlobalPowerFactor(self.dom["vs-global-power"].value);
         });
         self.dom["vs-alpha"].addEventListener("change", function() {
             self.setSpeedAlpha(self.dom["vs-alpha"].value);
@@ -89,6 +92,8 @@ var UserInterface = function(domElement, interaction) {
         self.dom["vs-flappy-power-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.weights.flappy;
         self.dom["vs-squashy-power"].value = self.currentInteractiveSkeleton[0].PARAMS.weights.squashy;
         self.dom["vs-squashy-power-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.weights.squashy;
+        self.dom["vs-global-power"].value = self.currentInteractiveSkeleton[0].PARAMS.weights.globalFactor;
+        self.dom["vs-global-power-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.weights.globalFactor;
         self.dom["vs-alpha"].value = self.currentInteractiveSkeleton[0].PARAMS.alpha;
         self.dom["vs-alpha-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.alpha;
         self.dom["anim-speed-multiplier"].value = self.currentInteractiveSkeleton[0].PARAMS.animationSpeedMultiplier;
@@ -128,15 +133,21 @@ var UserInterface = function(domElement, interaction) {
         for(var isk in self.currentInteractiveSkeleton) {
             for(var j in self.currentInteractiveSkeleton[isk].joints) {
                 var boneElement = document.createElement("div");
-                boneElement.setAttribute("bone-index", j);
+                boneElement.setAttribute("joint-index", j);
                 boneElement.setAttribute("isk-index", isk);
                 boneElement.innerText = self.currentInteractiveSkeleton[isk].joints[j].boneObject.name + "-" + isk;
                 boneElement.classList.add("animation-item");
                 if(!self.currentInteractiveSkeleton[isk].getToggleJointVS(parseInt(j))) boneElement.classList.add("bone-disabled");
                 self.dom["bone-dropdown"].appendChild(boneElement);
                 boneElement.addEventListener("click", function() {
-                    self.selectedJoint = [parseInt(this.getAttribute("isk-index")), parseInt(this.getAttribute("bone-index"))];
+                    self.selectedJoint = [parseInt(this.getAttribute("isk-index")), parseInt(this.getAttribute("joint-index"))];
                     self.toggleJoint(self.selectedJoint[0], self.selectedJoint[1], !this.classList.contains("bone-disabled"));
+                });
+                boneElement.addEventListener("mouseover", function() {
+                    self.currentInteractiveSkeleton[parseInt(this.getAttribute("isk-index"))].setBoneReprColor(parseInt(this.getAttribute("joint-index")), new THREE.Color(0xFFFF00));
+                });
+                boneElement.addEventListener("mouseout", function() {
+                    self.currentInteractiveSkeleton[parseInt(this.getAttribute("isk-index"))].setBoneReprColor(parseInt(this.getAttribute("joint-index")), self.currentInteractiveSkeleton[parseInt(this.getAttribute("isk-index"))].SKELETON_COLORS.DEFAULT);
                 });
             }
         }
@@ -171,6 +182,12 @@ var UserInterface = function(domElement, interaction) {
         self.dom["vs-flappy-power-value"].innerText = value;
         for (var isk in self.currentInteractiveSkeleton) {
             self.currentInteractiveSkeleton[isk].PARAMS.weights.flappy = value;
+        }
+    }
+    self.setGlobalPowerFactor = function(value) {
+        self.dom["vs-global-power-value"].innerText = value;
+        for (var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].PARAMS.weights.globalFactor = value;
         }
     }
     self.setSpeedAlpha = function(value) {

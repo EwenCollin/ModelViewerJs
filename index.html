@@ -468,7 +468,7 @@ void main()
                     Animations
                 </div>
                 <div class="tab-content">
-                    <label for="anim-speed-multiplier">Animation speed multiplier - <span id="anim-speed-multiplier-value">1</span></label>
+                    <label for="anim-speed-multiplier">Animation speed factor - <span id="anim-speed-multiplier-value">1</span></label>
                     <input id="anim-speed-multiplier" class="slider" step="0.01" type="range" value="1" max="2" min="0">
                     <div class="dropdown">
                         <button id="animation-open-dropdown" class="dropbtn">Select current animation</button>
@@ -526,6 +526,8 @@ void main()
                     Velocity Skinning
                 </div>
                 <div class="tab-content">
+                    <label for="vs-global-power">Global power factor - <span id="vs-global-power-value">1</span></label>
+                    <input id="vs-global-power" class="slider" step="0.01" type="range" value="1" max="1.5" min="0">
                     <label for="vs-flappy-power">Flapping power - <span id="vs-flappy-power-value">1</span></label>
                     <input id="vs-flappy-power" class="slider" step="0.01" type="range" value="1" max="2" min="0">
                     <label for="vs-squashy-power">Squashing power - <span id="vs-squashy-power-value">1</span></label>

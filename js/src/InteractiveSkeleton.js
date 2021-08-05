@@ -71,7 +71,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
     self.PARAMS = {
         weights: {
             flappy: 1,
-            squashy: 1
+            squashy: 1,
+            globalFactor: 1,
         },
         alpha: 0.7,
         playAnimation: false,
@@ -109,7 +110,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
             self.velocity_skinning_data["param"]["disabled_joints"] = [];
             if(!enabled) {
                 for(var j in self.joints) {
-                    self.velocity_skinning_data["param"]["disabled_joints"].push(parseInt(j));
+                    self.velocity_skinning_data["param"]["disabled_joints"].push(parseInt(self.joints[j].index));
                 }
             }
         } else {
@@ -125,6 +126,13 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
 
     self.getToggleJointVS = function(joint) {
         return self.velocity_skinning_data["param"]["disabled_joints"].indexOf(joint) !== -1;
+    }
+
+    self.updateDisabledBones = function() {
+        self.velocity_skinning_data["param"]["disabled_bones"] = [];
+        for(var j in self.velocity_skinning_data["param"]["disabled_joints"]) {
+            self.velocity_skinning_data["param"]["disabled_bones"].push(self.joints[self.velocity_skinning_data["param"]["disabled_joints"][j]].index);
+        }
     }
 
     self.getControlsSpace = function() {
@@ -350,6 +358,10 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
         }
     }
 
+    self.setBoneReprColor = function(index, color) {
+        self.joints[index].jointGroup.material.color.copy(color);
+    }
+
     self.setSkeletonColor = function(color) {
         for(var j = 0; j < self.joints.length; j++) {
             self.joints[j].jointGroup.material.color.copy(color);
@@ -465,7 +477,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
             "param": {
                 "flappy": self.PARAMS.weights.flappy,
                 "squashy": self.PARAMS.weights.squashy,
-                "disabled_joints": []
+                "disabled_joints": [],
+                "disabled_bones": [],
             }
         }
         self.recalculateMatrix(self.joints);
@@ -716,8 +729,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations)
         }
         model["skeleton_current"]["rotation_local"] = computeLocalRotations();
         model["skeleton_current"]["rotation_global"] = computeGlobalRotations(model["skeleton_current"]["rotation_local"]);
-        model["param"]["flappy"] = self.PARAMS.weights.flappy;
-        model["param"]["squashy"] = self.PARAMS.weights.squashy;
+        model["param"]["flappy"] = self.PARAMS.weights.flappy*self.PARAMS.weights.globalFactor;
+        model["param"]["squashy"] = self.PARAMS.weights.squashy*self.PARAMS.weights.globalFactor;
         computeVelocitySkinningDeformation(model);
         for(var Kvertex = 0; Kvertex < self.geometryAttributes.position.count; Kvertex++) {
             self.geometryAttributes.position.array[Kvertex*3] += model["velocity_skinning_deformation"][Kvertex].x;
