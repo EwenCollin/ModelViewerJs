@@ -553,7 +553,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
                 model["velocity_skinning"]["vertex_weight_depending_on_joint"][jointIdx].push(vertexWeights[Kj]);
             }
             vertexVelocitySkinningSize.push(vertexJointsIdx.length);
-            vertexVelocitySkinningCumulativeIndex.push(lastIndex + vertexJointsIdx.length);
+            vertexVelocitySkinningCumulativeIndex.push(lastIndex);
             lastIndex = lastIndex + vertexJointsIdx.length;
         }
         model["velocity_skinning"]["vertex_joint_size"] = vertexVelocitySkinningSize;

@@ -29,7 +29,6 @@ var ShaderHelper = function(data) {
     self.generateShader = function() {
         self.generateStaticUniformsVertex();
         self.generateDynamicUniformsVertex();
-        console.log("SHADER HELPER : ", self);
         var shader = new THREE.ShaderMaterial({
             depthTest: true,
             skinning: true,
@@ -63,10 +62,12 @@ var ShaderHelper = function(data) {
             }
         });
         if(self.data.skinnedMesh.material.map) {
-            shader.uniforms["map"].value = self.data.skinnedMesh.material.map.clone();
+            console.log(self.data.skinnedMesh.material.map);
+            shader.uniforms["map"].value = self.data.skinnedMesh.material.map;
         }
         shader.glslVersion = THREE.GLSL3;
         self.data.skinnedMesh.material = shader;
+        console.log("SHADER HELPER : ", self, shader);
     }
 
     self.generateStaticUniformsVertex = function() {
@@ -75,20 +76,20 @@ var ShaderHelper = function(data) {
         self.N_vertex = self.data.geometryAttributes.position.count;
         self.N_joint = model["velocity_skinning"]["center_of_mass"].length;
 
-        self.texture_rig_cumulative_index_array = new Int8Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.position.count/4)) * 4);
+        self.texture_rig_cumulative_index_array = new Int32Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.position.count/4)) * 4);
         for(var i = 0; i < self.data.geometryAttributes.position.count; i++) self.texture_rig_cumulative_index_array[i] = i*4;
-        self.texture_rig_cumulative_index = new THREE.DataTexture(self.texture_rig_cumulative_index_array, self.getValidWidth(Math.ceil(self.data.geometryAttributes.position.count/4)), self.getValidHeight(Math.ceil(self.data.geometryAttributes.position.count/4)), THREE.RGBAIntegerFormat, THREE.ByteType);
-        self.texture_rig_cumulative_index.internalFormat = 'RGBA8I';
+        self.texture_rig_cumulative_index = new THREE.DataTexture(self.texture_rig_cumulative_index_array, self.getValidWidth(Math.ceil(self.data.geometryAttributes.position.count/4)), self.getValidHeight(Math.ceil(self.data.geometryAttributes.position.count/4)), THREE.RGBAIntegerFormat, THREE.IntType);
+        self.texture_rig_cumulative_index.internalFormat = 'RGBA32I';
 
-        self.texture_rig_size_array = new Int8Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.position.count/4)) * 4);
+        self.texture_rig_size_array = new Int32Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.position.count/4)) * 4);
         for(var i = 0; i < self.data.geometryAttributes.position.count; i++) self.texture_rig_size_array[i] = 4;
-        self.texture_rig_size = new THREE.DataTexture(self.texture_rig_size_array, self.getValidWidth(Math.ceil(self.data.geometryAttributes.position.count/4)), self.getValidHeight(Math.ceil(self.data.geometryAttributes.position.count/4)), THREE.RGBAIntegerFormat, THREE.ByteType);
-        self.texture_rig_size.internalFormat = 'RGBA8I';
+        self.texture_rig_size = new THREE.DataTexture(self.texture_rig_size_array, self.getValidWidth(Math.ceil(self.data.geometryAttributes.position.count/4)), self.getValidHeight(Math.ceil(self.data.geometryAttributes.position.count/4)), THREE.RGBAIntegerFormat, THREE.IntType);
+        self.texture_rig_size.internalFormat = 'RGBA32I';
 
-        self.texture_rig_joint_array = new Int8Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.skinIndex.count)) * 4);
+        self.texture_rig_joint_array = new Int32Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.skinIndex.count)) * 4);
         for(var i = 0; i < self.data.geometryAttributes.skinIndex.count * 4; i++) self.texture_rig_joint_array[i] = self.data.geometryAttributes.skinIndex.array[i];
-        self.texture_rig_joint = new THREE.DataTexture(self.texture_rig_joint_array, self.getValidWidth(self.data.geometryAttributes.skinIndex.count), self.getValidHeight(self.data.geometryAttributes.skinIndex.count), THREE.RGBAIntegerFormat, THREE.ByteType);
-        self.texture_rig_joint.internalFormat = 'RGBA8I';
+        self.texture_rig_joint = new THREE.DataTexture(self.texture_rig_joint_array, self.getValidWidth(self.data.geometryAttributes.skinIndex.count), self.getValidHeight(self.data.geometryAttributes.skinIndex.count), THREE.RGBAIntegerFormat, THREE.IntType);
+        self.texture_rig_joint.internalFormat = 'RGBA32I';
 
         self.texture_rig_weight_array = new Float32Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.skinWeight.count)) * 4);
         for(var i = 0; i < self.data.geometryAttributes.skinWeight.count * 4; i++) self.texture_rig_weight_array[i] = self.data.geometryAttributes.skinWeight.array[i];
@@ -100,25 +101,25 @@ var ShaderHelper = function(data) {
         self.tbo_sk0 = new THREE.DataTexture(self.tbo_sk0_array, self.getValidWidth(self.data.initialMatricesInverse.length * 4), self.getValidHeight(self.data.initialMatricesInverse.length * 4), THREE.RGBAFormat, THREE.FloatType);
         self.tbo_sk0.internalFormat = 'RGBA32F';
 
-        self.texture_vs_rig_joint_array = new Int8Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["vertex_joint_index"].length/4)) * 4);
+        self.texture_vs_rig_joint_array = new Int32Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["vertex_joint_index"].length/4)) * 4);
         for(var i = 0; i < model["velocity_skinning"]["vertex_joint_index"].length; i++) self.texture_vs_rig_joint_array[i] = model["velocity_skinning"]["vertex_joint_index"][i];
-        self.texture_vs_rig_joint = new THREE.DataTexture(self.texture_vs_rig_joint_array, self.getValidWidth(Math.ceil(model["velocity_skinning"]["vertex_joint_index"].length/4)), self.getValidHeight(Math.ceil(model["velocity_skinning"]["vertex_joint_index"].length/4)), THREE.RGBAIntegerFormat, THREE.ByteType);
-        self.texture_vs_rig_joint.internalFormat = 'RGBA8I';
+        self.texture_vs_rig_joint = new THREE.DataTexture(self.texture_vs_rig_joint_array, self.getValidWidth(Math.ceil(model["velocity_skinning"]["vertex_joint_index"].length/4)), self.getValidHeight(Math.ceil(model["velocity_skinning"]["vertex_joint_index"].length/4)), THREE.RGBAIntegerFormat, THREE.IntType);
+        self.texture_vs_rig_joint.internalFormat = 'RGBA32I';
 
         self.texture_vs_rig_weight_array = new Float32Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["vertex_joint_weight"].length/4)) * 4);
         for(var i = 0; i < model["velocity_skinning"]["vertex_joint_weight"].length; i++) self.texture_vs_rig_weight_array[i] = model["velocity_skinning"]["vertex_joint_weight"][i];
         self.texture_vs_rig_weight = new THREE.DataTexture(self.texture_vs_rig_weight_array, self.getValidWidth(Math.ceil(model["velocity_skinning"]["vertex_joint_weight"].length/4)), self.getValidHeight(Math.ceil(model["velocity_skinning"]["vertex_joint_weight"].length/4)), THREE.RGBAFormat, THREE.FloatType);
         self.texture_vs_rig_weight.internalFormat = 'RGBA32F';
 
-        self.texture_vs_rig_size_array = new Int8Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["vertex_joint_size"].length/4)) * 4);
+        self.texture_vs_rig_size_array = new Int32Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["vertex_joint_size"].length/4)) * 4);
         for(var i = 0; i < model["velocity_skinning"]["vertex_joint_size"].length; i++) self.texture_vs_rig_size_array[i] = model["velocity_skinning"]["vertex_joint_size"][i];
-        self.texture_vs_rig_size = new THREE.DataTexture(self.texture_vs_rig_size_array, self.getValidWidth(Math.ceil(model["velocity_skinning"]["vertex_joint_size"].length/4)), self.getValidHeight(Math.ceil(model["velocity_skinning"]["vertex_joint_size"].length/4)), THREE.RGBAIntegerFormat, THREE.ByteType);
-        self.texture_vs_rig_size.internalFormat = 'RGBA8I';
+        self.texture_vs_rig_size = new THREE.DataTexture(self.texture_vs_rig_size_array, self.getValidWidth(Math.ceil(model["velocity_skinning"]["vertex_joint_size"].length/4)), self.getValidHeight(Math.ceil(model["velocity_skinning"]["vertex_joint_size"].length/4)), THREE.RGBAIntegerFormat, THREE.IntType);
+        self.texture_vs_rig_size.internalFormat = 'RGBA32I';
 
-        self.texture_vs_rig_cumulative_index_array = new Int8Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["vertex_joint_cumulative_index"].length/4)) * 4);
+        self.texture_vs_rig_cumulative_index_array = new Int32Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["vertex_joint_cumulative_index"].length/4)) * 4);
         for(var i = 0; i < model["velocity_skinning"]["vertex_joint_cumulative_index"].length; i++) self.texture_vs_rig_cumulative_index_array[i] = model["velocity_skinning"]["vertex_joint_cumulative_index"][i];
-        self.texture_vs_rig_cumulative_index = new THREE.DataTexture(self.texture_vs_rig_cumulative_index_array, self.getValidWidth(Math.ceil(model["velocity_skinning"]["vertex_joint_cumulative_index"].length/4)), self.getValidHeight(Math.ceil(model["velocity_skinning"]["vertex_joint_cumulative_index"].length/4)), THREE.RGBAIntegerFormat, THREE.ByteType);
-        self.texture_vs_rig_cumulative_index.internalFormat = 'RGBA8I';
+        self.texture_vs_rig_cumulative_index = new THREE.DataTexture(self.texture_vs_rig_cumulative_index_array, self.getValidWidth(Math.ceil(model["velocity_skinning"]["vertex_joint_cumulative_index"].length/4)), self.getValidHeight(Math.ceil(model["velocity_skinning"]["vertex_joint_cumulative_index"].length/4)), THREE.RGBAIntegerFormat, THREE.IntType);
+        self.texture_vs_rig_cumulative_index.internalFormat = 'RGBA32I';
 
         self.texture_center_of_mass_array = new Float32Array(self.getValidSize(Math.ceil(model["velocity_skinning"]["center_of_mass"].length * 3)) * 4);
         for(var i = 0; i < model["velocity_skinning"]["center_of_mass"].length; i++) {

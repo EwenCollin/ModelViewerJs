@@ -146,8 +146,13 @@ mat3 rotation_between_vector(vec3 a, vec3 b)
 
 mat4 mat4_from_texture(sampler2D s, int k)
 {
+    
     int mod_k = int(floor(mod(float(k), float(max_texture_size))));
     int floor_k = int(floor(float(k)/float(max_texture_size)));
+    /*
+    int mod_k = int(floor(mod(float(k)/float(max_texture_size), float(4))));
+    int floor_k = int(floor(float(k)/(float(max_texture_size) * 4.0)));*/
+
     float xx = texelFetch(s, ivec2(4*mod_k+0, floor_k), 0).r; float xy = texelFetch(s, ivec2(4*mod_k+0, floor_k), 0).g; float xz = texelFetch(s, ivec2(4*mod_k+0, floor_k), 0).b; float xw = texelFetch(s, ivec2(4*mod_k+0, floor_k), 0).a;
     float yx = texelFetch(s, ivec2(4*mod_k+1, floor_k), 0).r; float yy = texelFetch(s, ivec2(4*mod_k+1, floor_k), 0).g; float yz = texelFetch(s, ivec2(4*mod_k+1, floor_k), 0).b; float yw = texelFetch(s, ivec2(4*mod_k+1, floor_k), 0).a;
     float zx = texelFetch(s, ivec2(4*mod_k+2, floor_k), 0).r; float zy = texelFetch(s, ivec2(4*mod_k+2, floor_k), 0).g; float zz = texelFetch(s, ivec2(4*mod_k+2, floor_k), 0).b; float zw = texelFetch(s, ivec2(4*mod_k+2, floor_k), 0).a;
@@ -197,12 +202,33 @@ void LBS(in vec4 p0, in vec4 n0, inout vec4 p_skinning, inout vec4 p_skinning_no
     p_skinning = vec4(0.0);
     p_skinning_normal = vec4(0.0);
 
-    int mod_vertexID = int(floor(mod(mod(float(gl_VertexID), float(max_texture_size)*4.0), 4.0)));
-    int floor_vertexID = int(floor(mod(float(gl_VertexID), float(max_texture_size))));
-    int line_vertexID = int(floor(float(gl_VertexID)/(float(max_texture_size) * 4.0)));
+    /*
+    int mod_vertexID = int(mod(float(gl_VertexID), 4.0));
+    int floor_vertexID = int(mod(float(gl_VertexID)/float(4), float(max_texture_size)));
+    int line_vertexID = int((float(gl_VertexID)/float(4))/float(max_texture_size));*/
+    /*
+    int mod_vertexID = int(floor(mod(float(gl_VertexID), 4.0)));
+    int floor_vertexID = int(floor(mod(float(gl_VertexID)/float(4), float(max_texture_size))));
+    int line_vertexID = int(floor((float(gl_VertexID)/float(4))/float(max_texture_size)));*/
 
-    int offset = gl_VertexID*4;//texelFetch(texture_rig_cumulative_index, ivec2(floor_vertexID, line_vertexID), 0)[mod_vertexID];
-    int N_dependency = 4;//texelFetch(texture_rig_size, ivec2(floor_vertexID, line_vertexID), 0)[mod_vertexID];
+    /*
+    int mod_vertexID = int(floor(mod(mod(float(gl_VertexID), float(max_texture_size)*4.0), 4.0)));
+    int floor_vertexID = int(floor(mod(float(gl_VertexID)/float(max_texture_size), float(4))));
+    int line_vertexID = int(floor(float(gl_VertexID)/(float(max_texture_size) * 4.0)));*/
+
+    /*
+    int line_vertexID = int(floor(float(gl_VertexID) / float(max_texture_size)));
+    int floor_vertexID = int(floor(mod(float(gl_VertexID), float(max_texture_size))));
+    int mod_vertexID = int(floor(mod(float(floor_vertexID), 4.0)));
+    */
+
+    int mod_vertexID = int(mod(float(gl_VertexID), 4.0));
+    int floor_vertexID = int(mod(float(gl_VertexID)/float(4), float(max_texture_size)));
+    int line_vertexID = int((float(gl_VertexID)/float(4))/float(max_texture_size));
+
+
+    int offset = gl_VertexID * 4;//texelFetch(texture_rig_cumulative_index, ivec2(floor_vertexID, line_vertexID), 0)[mod_vertexID];
+    int N_dependency = texelFetch(texture_rig_size, ivec2(floor_vertexID, line_vertexID), 0)[mod_vertexID];
 
     for(int k_dep=0; k_dep<N_dependency; ++k_dep)
     {
@@ -211,6 +237,10 @@ void LBS(in vec4 p0, in vec4 n0, inout vec4 p_skinning, inout vec4 p_skinning_no
         int floor_offset = int(floor(mod(float(offset+k_dep), float(max_texture_size))));
         int line_offset = int(floor(float(offset+k_dep)/(float(max_texture_size) * 4.0)));
         */
+        /*
+        int mod_offset = int(floor(mod(mod(float(offset+k_dep), float(max_texture_size)*4.0), 4.0)));
+        int floor_offset = int(floor(mod(float(offset+k_dep)/float(max_texture_size), float(4))));
+        int line_offset = int(floor(float(offset+k_dep)/(float(max_texture_size) * 4.0)));*/
 
         int mod_offset = int(mod(float(offset+k_dep), 4.0));
         int floor_offset = int(mod(float(offset+k_dep)/float(4), float(max_texture_size)));
@@ -315,17 +345,17 @@ void retrieve_joint_info(in int k_joint, out mat4 T, out vec3 angular_velocity, 
 {
     //Ewen's note : remove interactive mode condition or set it by default, use RGB values instead of index change.
     if(interactive_mode) {
-        int mod_k_joint = int(mod(float(k_joint), float(max_texture_size)));
-        int floor_k_joint = int((float(k_joint))/float(max_texture_size));
+        int mod_k_joint = int(floor(mod(float(k_joint), float(max_texture_size))));
+        int floor_k_joint = int(floor((float(k_joint))/float(max_texture_size)));
 
-        angular_velocity = vec3(texelFetch(tbo_angular_velocity, ivec2(3*mod_k_joint+0, floor_k_joint), 0).r,texelFetch(tbo_angular_velocity, ivec2(3*mod_k_joint+0, floor_k_joint), 0).g,texelFetch(tbo_angular_velocity, ivec2(3*mod_k_joint+0, floor_k_joint), 0).b);//+0.01*angular_velocity[k_joint];
-        linear_velocity = vec3(texelFetch(tbo_linear_velocity, ivec2(3*mod_k_joint+0, floor_k_joint), 0).r,texelFetch(tbo_linear_velocity, ivec2(3*mod_k_joint+0, floor_k_joint), 0).g,texelFetch(tbo_linear_velocity, ivec2(3*mod_k_joint+0, floor_k_joint), 0).b);//+0.01*angular_velocity[k_joint];
+        angular_velocity = vec3(texelFetch(tbo_angular_velocity, ivec2(mod_k_joint+0, floor_k_joint), 0).r,texelFetch(tbo_angular_velocity, ivec2(mod_k_joint+0, floor_k_joint), 0).g,texelFetch(tbo_angular_velocity, ivec2(mod_k_joint+0, floor_k_joint), 0).b);//+0.01*angular_velocity[k_joint];
+        linear_velocity = vec3(texelFetch(tbo_linear_velocity, ivec2(mod_k_joint+0, floor_k_joint), 0).r,texelFetch(tbo_linear_velocity, ivec2(mod_k_joint+0, floor_k_joint), 0).g,texelFetch(tbo_linear_velocity, ivec2(mod_k_joint+0, floor_k_joint), 0).b);//+0.01*angular_velocity[k_joint];
         T = mat4_from_texture(tbo_sk, k_joint);
     }
     /*
     else {
-        angular_velocity = vec3(texelFetch(texture_angular_velocity_anim, (3*k_joint+0)+3*N_joint*int(shuffle_time)).r,texelFetch(texture_angular_velocity_anim, 3*k_joint+1+3*N_joint*int(shuffle_time)).r,texelFetch(texture_angular_velocity_anim, 3*k_joint+2+3*N_joint*int(shuffle_time)).r);
-        linear_velocity = vec3(texelFetch(texture_linear_velocity_anim, (3*k_joint+0)+3*N_joint*int(shuffle_time)).r,texelFetch(texture_linear_velocity_anim, 3*k_joint+1+3*N_joint*int(shuffle_time)).r,texelFetch(texture_linear_velocity_anim, 3*k_joint+2+3*N_joint*int(shuffle_time)).r);
+        angular_velocity = vec3(texelFetch(texture_angular_velocity_anim, (3*k_joint+0)+3*N_joint*int(shuffle_time)).r,texelFetch(texture_angular_velocity_anim, k_joint+1+3*N_joint*int(shuffle_time)).r,texelFetch(texture_angular_velocity_anim, 3*k_joint+2+3*N_joint*int(shuffle_time)).r);
+        linear_velocity = vec3(texelFetch(texture_linear_velocity_anim, (3*k_joint+0)+3*N_joint*int(shuffle_time)).r,texelFetch(texture_linear_velocity_anim, k_joint+1+3*N_joint*int(shuffle_time)).r,texelFetch(texture_linear_velocity_anim, 3*k_joint+2+3*N_joint*int(shuffle_time)).r);
         T = mat4_from_texture(texture_T_anim, k_joint + (N_joint * int(shuffle_time)) );
     }
     */
@@ -338,7 +368,11 @@ void velocity_skinning(in float floppy_weight_vertex, in vec3 p_skinning3d, inou
     int mod_vertexID = int(mod(mod(float(gl_VertexID), float(max_texture_size)), 4.0));
     int floor_vertexID = int(mod(float(gl_VertexID), float(max_texture_size))/float(4));
     int line_vertexID = int(float(gl_VertexID)/float(max_texture_size));*/
-
+    /*
+    int mod_vertexID = int(floor(mod(float(gl_VertexID), 4.0)));
+    int floor_vertexID = int(floor(mod(float(gl_VertexID)/float(4), float(max_texture_size))));
+    int line_vertexID = int(floor((float(gl_VertexID)/float(4))/float(max_texture_size)));*/
+    
     int mod_vertexID = int(mod(float(gl_VertexID), 4.0));
     int floor_vertexID = int(mod(float(gl_VertexID)/float(4), float(max_texture_size)));
     int line_vertexID = int((float(gl_VertexID)/float(4))/float(max_texture_size));
@@ -348,6 +382,11 @@ void velocity_skinning(in float floppy_weight_vertex, in vec3 p_skinning3d, inou
 
     for(int k_dep=0; k_dep<vs_N_dependency; ++k_dep)
     {
+        /*
+        int mod_offset = int(floor(mod(float(vs_offset+k_dep), 4.0)));
+        int floor_offset = int(floor(mod(float(vs_offset+k_dep)/float(4), float(max_texture_size))));
+        int line_offset = int(floor((float(vs_offset+k_dep)/float(4))/float(max_texture_size)));*/
+
         int mod_offset = int(mod(float(vs_offset+k_dep), 4.0));
         int floor_offset = int(mod(float(vs_offset+k_dep)/float(4), float(max_texture_size)));
         int line_offset = int((float(vs_offset+k_dep)/float(4))/float(max_texture_size));
@@ -355,10 +394,10 @@ void velocity_skinning(in float floppy_weight_vertex, in vec3 p_skinning3d, inou
         int k_joint = texelFetch(texture_vs_rig_joint, ivec2(floor_offset, line_offset), 0)[mod_offset]; // current joint
         float w = texelFetch(texture_vs_rig_weight, ivec2(floor_offset, line_offset), 0)[mod_offset];    // velocity-skinning weight
 
-        int mod_k_joint = int(mod(float(k_joint), float(max_texture_size)));
-        int floor_k_joint = int(float(k_joint)/float(max_texture_size));
+        int mod_k_joint = int(floor(mod(float(k_joint), float(max_texture_size))));
+        int floor_k_joint = int(floor(float(k_joint)/float(max_texture_size)));
 
-        vec3 center_of_mass = vec3(texelFetch(texture_center_of_mass, ivec2(3*mod_k_joint+0, floor_k_joint), 0).r,texelFetch(texture_center_of_mass, ivec2(3*mod_k_joint+0, floor_k_joint), 0).g, texelFetch(texture_center_of_mass, ivec2(3*mod_k_joint+0, floor_k_joint), 0).b);
+        vec3 center_of_mass = vec3(texelFetch(texture_center_of_mass, ivec2(mod_k_joint+0, floor_k_joint), 0).r,texelFetch(texture_center_of_mass, ivec2(mod_k_joint+0, floor_k_joint), 0).g, texelFetch(texture_center_of_mass, ivec2(mod_k_joint+0, floor_k_joint), 0).b);
 
         mat4 T;vec3 angular_velocity, linear_velocity; // position and velocity of joint
         retrieve_joint_info(k_joint, T, angular_velocity, linear_velocity);
@@ -443,6 +482,7 @@ void main()
     
     //fragment.texture_uv = vec2(0.0, 0.0);
     fragment.floppy_weight = floppy_weight_vertex;*/
+    vUv = uv;
 
     vec4 position_deformed = vec4(p_deformed3d, 1.0);
 
