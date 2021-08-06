@@ -82,13 +82,13 @@ var ShaderHelper = function(data) {
         for(var i = 0; i < self.data.geometryAttributes.position.count; i++) self.texture_rig_size_array[i] = 4;
         self.texture_rig_size = new THREE.DataTexture(self.texture_rig_size_array, self.getValidWidth(Math.ceil(self.data.geometryAttributes.position.count/4)), self.getValidHeight(Math.ceil(self.data.geometryAttributes.position.count/4)), THREE.RGBAFormat, THREE.UnsignedByteType);
 
-        self.texture_rig_joint_array = new Uint8Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.position.count/4)) * 4);
+        self.texture_rig_joint_array = new Uint8Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.skinIndex.count)) * 4);
         for(var i = 0; i < self.data.geometryAttributes.position.count * 4; i++) self.texture_rig_joint_array[i] = self.data.geometryAttributes.skinIndex.array[i];
-        self.texture_rig_joint = new THREE.DataTexture(self.texture_rig_joint_array, self.getValidWidth(self.data.geometryAttributes.position.count), self.getValidHeight(self.data.geometryAttributes.position.count), THREE.RGBAFormat, THREE.UnsignedByteType);
+        self.texture_rig_joint = new THREE.DataTexture(self.texture_rig_joint_array, self.getValidWidth(self.data.geometryAttributes.skinIndex.count), self.getValidHeight(self.data.geometryAttributes.skinIndex.count), THREE.RGBAIntegerFormat, THREE.UnsignedByteType);
 
-        self.texture_rig_weight_array = new Float32Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.position.count/4)) * 4);
+        self.texture_rig_weight_array = new Float32Array(self.getValidSize(Math.ceil(self.data.geometryAttributes.skinWeight.count)) * 4);
         for(var i = 0; i < self.data.geometryAttributes.position.count * 4; i++) self.texture_rig_weight_array[i] = self.data.geometryAttributes.skinWeight.array[i];
-        self.texture_rig_weight = new THREE.DataTexture(self.texture_rig_weight_array, self.getValidWidth(self.data.geometryAttributes.position.count), self.getValidHeight(self.data.geometryAttributes.position.count), THREE.RGBAFormat, THREE.FloatType);
+        self.texture_rig_weight = new THREE.DataTexture(self.texture_rig_weight_array, self.getValidWidth(self.data.geometryAttributes.skinWeight.count), self.getValidHeight(self.data.geometryAttributes.skinWeight.count), THREE.RGBAFormat, THREE.FloatType);
 
         self.tbo_sk0_array = new Float32Array(self.getValidSize(Math.ceil(self.data.initialMatricesInverse.length * 4)) * 4);
         for(var i = 0; i < self.data.initialMatricesInverse.length; i++) self.data.initialMatricesInverse[i].toArray(self.tbo_sk0_array, i * 16);
