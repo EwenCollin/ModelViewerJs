@@ -620,7 +620,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
         console.log(model);
     }
 
-    self.updateGeometryVS = function() {
+    self.updateGeometryVS = function(applyVS) {
 
         
 
@@ -774,11 +774,13 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
         model["skeleton_current"]["rotation_global"] = computeGlobalRotations(model["skeleton_current"]["rotation_local"]);
         model["param"]["flappy"] = self.PARAMS.weights.flappy*self.PARAMS.weights.globalFactor;
         model["param"]["squashy"] = self.PARAMS.weights.squashy*self.PARAMS.weights.globalFactor;
-        computeVelocitySkinningDeformation(model);
-        for(var Kvertex = 0; Kvertex < self.geometryAttributes.position.count; Kvertex++) {
-            self.geometryAttributes.position.array[Kvertex*3] += model["velocity_skinning_deformation"][Kvertex].x;
-            self.geometryAttributes.position.array[Kvertex*3 + 1] += model["velocity_skinning_deformation"][Kvertex].y;
-            self.geometryAttributes.position.array[Kvertex*3 + 2] += model["velocity_skinning_deformation"][Kvertex].z;
+        if(applyVS) {
+            computeVelocitySkinningDeformation(model);
+            for(var Kvertex = 0; Kvertex < self.geometryAttributes.position.count; Kvertex++) {
+                self.geometryAttributes.position.array[Kvertex*3] += model["velocity_skinning_deformation"][Kvertex].x;
+                self.geometryAttributes.position.array[Kvertex*3 + 1] += model["velocity_skinning_deformation"][Kvertex].y;
+                self.geometryAttributes.position.array[Kvertex*3 + 2] += model["velocity_skinning_deformation"][Kvertex].z;
+            }
         }
         //self.VertexMotionHelper.update(self.geometryAttributes.position.array);
     }
@@ -930,9 +932,9 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
         self.updateBindedSkeleton();
         self.updateRepr();
 
-        self.shaderHelper.tick();
         //self.updateGeometry();
-        //self.updateGeometryVS();
+        self.updateGeometryVS(false);
+        self.shaderHelper.tick();
         self.updateScaleUnit();
     }
     self.init();
