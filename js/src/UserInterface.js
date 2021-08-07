@@ -1,16 +1,17 @@
 import * as THREE from '../../build/three.module.js';
 
-var UserInterface = function(domElement, interaction) {
+var UserInterface = function(domElement, interaction, loader) {
     var self = this;
     self.domElement = domElement;
     self.interaction = interaction;
+    self.loader = loader;
     self.domTabs = self.domElement.getElementsByClassName("settings-tab");
     self.currentObject = null;
     self.currentInteractiveSkeleton = [];
     self.selectedJoint = [];
 
     self.dom = {}
-    self.domList = ["vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
+    self.domList = ["background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
 
     self.init = function() {
         for(var d in self.domList) {
@@ -29,6 +30,31 @@ var UserInterface = function(domElement, interaction) {
                 }
             });
         }
+
+        self.dom["background-color"].addEventListener("change", function() {
+            function hexToRgb(hex) {
+                var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                  r: parseInt(result[1], 16),
+                  g: parseInt(result[2], 16),
+                  b: parseInt(result[3], 16)
+                } : null;
+            }
+
+            self.interaction.scene.background = new THREE.Color(this.value);
+            var rgb = hexToRgb(this.value);
+            const brightness = Math.round(((parseInt(rgb.r) * 299) + (parseInt(rgb.g) * 587) + (parseInt(rgb.b) * 114)) / 1000);
+            var tabs = document.getElementsByClassName("tab-content");
+            if(brightness > 125) {
+                for(var tab in tabs) {
+                    tabs[tab].classList.remove("tab-content-dark");
+                }
+            } else {
+                for(var tab in tabs) {
+                    tabs[tab].classList.add("tab-content-dark");
+                }
+            }
+        });
 
         self.dom["vs-flappy-power"].addEventListener("change", function() {
             self.setFlappingPower(self.dom["vs-flappy-power"].value);
@@ -61,6 +87,7 @@ var UserInterface = function(domElement, interaction) {
         });
         self.dom["scene-empty"].addEventListener("click", function() {
             self.interaction.deleteAll();
+            self.loader.resetObjects();
             self.currentInteractiveSkeleton = [];
             self.currentObject = null;
         });

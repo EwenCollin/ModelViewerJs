@@ -158,12 +158,28 @@ body {
   padding-bottom: 10px;
   padding-top: 5px;
 }
+.tab-content-dark {
+  background: rgba(255, 255, 255, 0.5);
+}
 
 .tab-content label{
   font-size: 16px;
 }
 
 /* BUTTONS */
+
+input[type=color] {
+  cursor: pointer;
+  margin: 4px;
+  background: rgb(232, 232, 232);
+  color: #2196F3;
+  transition: 0.3s;
+  border-radius: 3px;
+  padding: 5px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
 .tab-button {
   margin: 2px;
   border: 2px solid rgb(232, 232, 232);
@@ -389,23 +405,4 @@ body {
   overflow-y: auto;
   max-width: 225px;
   overflow-x: hidden;
-}
-
-/* Links inside the dropdown */
-.dropdown-content .animation-item {
-  color: black;
-  padding: 6px;
-  text-decoration: none;
-  display: block;
-  cursor: pointer;
-}
-
-/* Change color of dropdown links on hover */
-.dropdown-content .animation-item:hover {background-color: #ddd}
-
-/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
-.show-animation-item {display:block;}
-
-.bone-disabled{
-  background:rgba(0, 0, 0, 0.5);
 }

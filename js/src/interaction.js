@@ -74,6 +74,7 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
 
 
     self.select = function(mouse) {
+        console.log(self.objects);
         var objectsToIntersect = self.assembleObjects();
         var rayResult = self.raycast(mouse, objectsToIntersect);
         if(rayResult.length > 0) {
@@ -104,12 +105,16 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     }
 
     self.deleteAll = function() {
+        self.transformControls.detach();
+        self.boneControls.detach();
         for(var obj in self.objects) {
             self.objects[obj].delete();
         }
-        self.objects = [];
         self.selectedObject = undefined;
-        self.transformControls.detach();
+    }
+
+    self.setObjects = function(objects) {
+        self.objects = objects;
     }
 }
 

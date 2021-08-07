@@ -1,5 +1,7 @@
 import * as THREE from '../build/three.module.js';
 
+import Stats from "../build/stats.module.js";
+
 import { MapControls } from './jsm/controls/OrbitControls.js';
 import { FBXLoader } from './jsm/loaders/FBXLoader.js';
 import { Interaction } from './src/interaction.js';
@@ -26,6 +28,9 @@ var interaction;
 
 var userInterface;
 
+var stats = new Stats();
+stats.showPanel(0);
+
 init();
 animate();
 
@@ -45,6 +50,7 @@ function init() {
 	camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 10000);
 	scene.add(camera);
 	camera.position.set(400, 200, 0);
+
 
 	// controls
 
@@ -73,7 +79,7 @@ function init() {
 
 	loader = new Loader(loadGroup, camera);
 	interaction = new Interaction(loader.getObjects(), renderer.domElement, camera, controls, scene);
-	userInterface = new UserInterface(document.getElementById("settings-panel"), interaction);
+	userInterface = new UserInterface(document.getElementById("settings-panel"), interaction, loader);
 	interaction.setUserInterface(userInterface);
 
 	//LIGHTS
@@ -121,6 +127,9 @@ function init() {
 	window.addEventListener( 'drop', onDrop, true );
 
 	renderer.domElement.addEventListener('click', onClick, false);
+
+	document.getElementById("stats-container").appendChild( stats.dom );
+
 	userInterface.init();
 }
 
@@ -185,13 +194,18 @@ function onWindowResize() {
 }
 
 function animate() {
+	stats.begin();
 
 	requestAnimationFrame(animate);
 
 	controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
 	render();
 	loader.tick();
+	interaction.setObjects(loader.getObjects());
 	interaction.tick(clock.getDelta());
+
+	
+	stats.end();
 }
 
 function render() {

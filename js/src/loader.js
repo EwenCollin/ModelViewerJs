@@ -25,6 +25,10 @@ var Loader = function(parentGroup, camera) {
     }
     self.init();
 
+    self.resetObjects = function() {
+        self.objects = [];
+    }
+
     self.tick = function() {
         if (self.loadedItems === self.toLoad.length) {
             document.getElementById("progress-bar2").style.width = 0;
