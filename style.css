@@ -36,8 +36,10 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0px 0px 10px 10px rgba(0, 0, 0, 0.5);
-  background-color: rgba(0, 0, 0, 0.5);
+  box-shadow: 0px 0px 5px 5px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #2195f3b0;
+  border-radius: 15px;
   animation-name: slide-in;
   animation-duration: 0.4s;
 }
@@ -52,7 +54,9 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
-  background-color: rgba(0, 0, 0, 0.5);
+  box-shadow: 0px 0px 5px 5px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 0.5);
+  color: black;
   font-size: 30px;
 }
 

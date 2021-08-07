@@ -28,12 +28,12 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.tick = function(dt) {
         for(var i = 0; i < self.objects.length; i++) {
             self.objects[i].selected = false;
+            self.objects[i].tick(dt, self.boneControls);
         }
         if(self.selectedObject !== undefined) {
             self.selectedObject.selected = true;
-            self.selectedObject.tick(dt, self.boneControls);
+            //self.selectedObject.tick(dt, self.boneControls);
             self.transformControls.attach(self.selectedObject.getTransformGroup());
-            
         }
     }
     
