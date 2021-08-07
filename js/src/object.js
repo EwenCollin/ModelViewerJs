@@ -95,7 +95,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		const boxRaycast = new THREE.Mesh(self.makeBoxBufferGeometry(new THREE.Vector3(box.geometry.attributes.position.array[0], box.geometry.attributes.position.array[1], box.geometry.attributes.position.array[2]), new THREE.Vector3(box.geometry.attributes.position.array[3], box.geometry.attributes.position.array[7], box.geometry.attributes.position.array[14])), new THREE.MeshBasicMaterial(0x00ffff));
 		boxRaycast.layers.enable(1);
 		object.attach(boxRaycast);
-		object.attach(box);
+		//object.attach(box);
 		console.log(box);
 		box.position.copy(object.position);
 		self.boxHelper = box;
@@ -133,7 +133,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					var rootJoint = getRoot(child.skeleton.bones[0]);
 					var rootJointIndex = rootBonesUUID.indexOf(rootJoint.uuid);
 					if(rootJointIndex !== -1) {
-						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations));
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera));
 					} else {
 						jointArray = [rootJoint];
 						indexJointRecursive(rootJoint);
@@ -142,7 +142,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 						}
 						bonesArray.push(jointArray);
 						rootBonesUUID.push(rootJoint.uuid);
-						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations));
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera));
 
 					}
 

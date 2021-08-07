@@ -9,6 +9,10 @@
   }
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: Helvetica, Arial, sans-serif;
@@ -32,8 +36,10 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0px 0px 10px 10px rgba(0, 0, 0, 0.5);
-  background-color: rgba(0, 0, 0, 0.5);
+  box-shadow: 0px 0px 5px 5px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 0.5);
+  color: #2195f3b0;
+  border-radius: 15px;
   animation-name: slide-in;
   animation-duration: 0.4s;
 }
@@ -48,7 +54,9 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
-  background-color: rgba(0, 0, 0, 0.5);
+  box-shadow: 0px 0px 5px 5px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 0.5);
+  color: black;
   font-size: 30px;
 }
 
@@ -91,21 +99,47 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  max-width: 100%;
-  width: 250px;
-  min-width: 25%;
+  width: 100%;
   margin: 0 auto;
-  background: rgba(255, 255, 255, 0.5);
+  width: max-content;
   color: black;
   font-size: 18px;
   transform-style: preserve-3d;
   max-height: 100%;
-  overflow-y: scroll;
+
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  align-content: flex-start;
+}
+.settings-tab {
+  flex: 1;
+  max-height: max-content;
+  max-width: 400px;
+  width: 250px;
+  min-width: 25%;
+  margin-right: 10px;
+
 }
 
 .tab-title {
   transition: 0.2s;
   cursor: pointer;
+  background: #2196F3;
+  color: white;
+  text-align: center;
+  border-radius: 8px;
+  margin: 10px;
+  font-weight: bold;
+}
+.active-tab-title {
+  background: #2196F3;
+  color: white;
+  text-align: center;
+  border-radius: 8px 8px 0 0;
+  margin: 0;
 }
 
 .tab-title:hover {
@@ -119,6 +153,10 @@ body {
   transform-origin: 0 0 100px;
   transform: rotateY(0);
   padding-left: 20px;
+  background: rgba(0, 0, 0, 0.15);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  padding-top: 5px;
 }
 
 .tab-content label{
@@ -128,13 +166,13 @@ body {
 /* BUTTONS */
 .tab-button {
   margin: 2px;
-  border: 2px solid #2196F3;
-  background: #2196F3;
+  border: 2px solid rgb(232, 232, 232);
+  background: rgb(232, 232, 232);
+  color: #2196F3;
   transition: 0.3s;
   border-radius: 3px;
   padding: 5px;
   cursor: pointer;
-  color: white;
   text-transform: uppercase;
 }
 .tab-button:hover{
@@ -149,9 +187,9 @@ body {
 /* RANGE */
 .slider {
   -webkit-appearance: none;
-  width: 100%;
+  width: 95%;
   height: 25px;
-  background: #d3d3d3;
+  background: #ffffff;
   outline: none;
   opacity: 0.7;
   -webkit-transition: .2s;
@@ -316,17 +354,20 @@ body {
 * ANIMATION TAB
 */
 .dropbtn {
-  background-color: #3498DB;
-  color: white;
-  padding: 6px;
-  font-size: 16px;
-  border: none;
+  margin: 2px;
+  border: 2px solid rgb(232, 232, 232);
+  background: rgb(232, 232, 232);
+  color: #2196F3;
+  transition: 0.3s;
+  border-radius: 3px;
+  padding: 5px;
   cursor: pointer;
+  text-transform: uppercase;
 }
-
 /* Dropdown button on hover & focus */
-.dropbtn:hover, .dropbtn:focus {
-  background-color: #2980B9;
+.dropbtn:hover {
+  transition: 0.3s;
+  border-color: black;
 }
 
 /* The container <div> - needed to position the dropdown content */
@@ -345,7 +386,9 @@ body {
   box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
   z-index: 2;
   max-height: 300px;
-  overflow-y: scroll;
+  overflow-y: auto;
+  max-width: 225px;
+  overflow-x: hidden;
 }
 
 /* Links inside the dropdown */

@@ -19,8 +19,14 @@ var UserInterface = function(domElement, interaction) {
         for(var tab = 0; tab < self.domTabs.length; tab++) {
             self.domTabs[tab].children[1].style.display = "none";
             self.domTabs[tab].children[0].addEventListener("click", function(event) {
-                if (this.parentNode.children[1].style.display == "none") this.parentNode.children[1].style.display = "block";
-                else this.parentNode.children[1].style.display = "none";
+                if (this.parentNode.children[1].style.display == "none") {
+                    this.parentNode.children[1].style.display = "block";
+                    this.classList.add("active-tab-title");
+                }
+                else {
+                    this.parentNode.children[1].style.display = "none";
+                    this.classList.remove("active-tab-title");
+                }
             });
         }
 
