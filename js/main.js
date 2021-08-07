@@ -31,7 +31,7 @@ animate();
 
 function init() {
 	scene = new THREE.Scene();
-	scene.background = new THREE.Color(0xcccccc);
+	scene.background = new THREE.Color(0xFFFFFF);
 	//scene.fog = new THREE.FogExp2(0xcccccc, 0.002);
 
 	renderer = new THREE.WebGLRenderer({ antialias: true });
