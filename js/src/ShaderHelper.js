@@ -4,6 +4,7 @@ var ShaderHelper = function(data) {
     var self = this;
     self.data = data;
     self.maxTextureSize = 8192;
+    self.shader;
 
     self.getValidWidth = function(nb) {
         var power = 2;
@@ -68,6 +69,7 @@ var ShaderHelper = function(data) {
         shader.glslVersion = THREE.GLSL3;
         self.data.skinnedMesh.material = shader;
         console.log("SHADER HELPER : ", self, shader);
+        self.shader = shader;
     }
 
     self.generateStaticUniformsVertex = function() {
@@ -162,6 +164,10 @@ var ShaderHelper = function(data) {
         var model = self.data.velocity_skinning_data;
         var object = self.data.skinnedMesh;
 
+        if(self.shader) self.shader.uniforms.floppy_power.value = model["param"]["flappy"];
+        else self.floppy_power = model["param"]["flappy"];
+        if(self.shader) self.shader.uniforms.squashy_power.value = model["param"]["squashy"];
+        else self.squashy_power = model["param"]["squashy"];
         self.translation = new THREE.Vector3();
         self.rotation = new THREE.Quaternion();
         self.scaling = new THREE.Vector3();
@@ -169,10 +175,11 @@ var ShaderHelper = function(data) {
         object.matrixWorld.decompose(self.translation, self.rotation, self.scaling);
         self.rotation = new THREE.Matrix3().setFromMatrix4(object.matrixWorld);
         self.scaling = self.scaling.length();
-        self.floppy_power = self.data.PARAMS.weights.globalFactor*self.data.PARAMS.weights.flappy;
-        self.squashy_power = self.data.PARAMS.weights.globalFactor*self.data.PARAMS.weights.squashy;
-
-        self.view = self.data.skinnedMesh.modelViewMatrix;
+        self.data.camera.updateMatrixWorld(true);
+        self.data.skinnedMesh.updateMatrixWorld(true);
+        if(self.view) self.view.multiplyMatrices(self.data.camera.matrixWorld.clone().invert(), self.data.rootJoint.parent.matrixWorld);//self.data.skinnedMesh.modelViewMatrix;//new THREE.Matrix4().multiplyMatrices(self.data.camera.matrixWorldInverse, self.data.skinnedMesh.matrixWorld);
+        else self.view = new THREE.Matrix4().multiplyMatrices(self.data.camera.matrixWorld.clone().invert(), self.data.rootJoint.parent.matrixWorld);
+        self.data.camera.updateProjectionMatrix();
         self.perspective = self.data.camera.projectionMatrix;
         
         for(var i = 0; i < self.data.currentMatrices.length; i++) self.data.currentMatrices[i].toArray(self.tbo_sk_array, i * 16);
@@ -180,16 +187,30 @@ var ShaderHelper = function(data) {
 
         for(var i = 0; i < model["velocity_skinning"]["rotation_tracker"].length; i++) {
             //if(i == 5) console.log(model["velocity_skinning"]["rotation_tracker"][i].current_speed);
-            self.tbo_angular_velocity_array[i*4] = model["velocity_skinning"]["rotation_tracker"][i].current_speed.x;
-            self.tbo_angular_velocity_array[i*4 + 1] = model["velocity_skinning"]["rotation_tracker"][i].current_speed.y;
-            self.tbo_angular_velocity_array[i*4 + 2] = model["velocity_skinning"]["rotation_tracker"][i].current_speed.z;
+            if (model["param"]["disabled_bones"].indexOf(i) === -1) {
+                self.tbo_angular_velocity_array[i*4] = model["velocity_skinning"]["rotation_tracker"][i].current_speed.x;
+                self.tbo_angular_velocity_array[i*4 + 1] = model["velocity_skinning"]["rotation_tracker"][i].current_speed.y;
+                self.tbo_angular_velocity_array[i*4 + 2] = model["velocity_skinning"]["rotation_tracker"][i].current_speed.z;
+            }
+            else {
+                self.tbo_angular_velocity_array[i*4] = 0;
+                self.tbo_angular_velocity_array[i*4 + 1] = 0;
+                self.tbo_angular_velocity_array[i*4 + 2] = 0;
+            }
         }
         self.tbo_angular_velocity.needsUpdate = true;
 
         for(var i = 0; i < model["velocity_skinning"]["speed_tracker"].length; i++) {
-            self.tbo_linear_velocity_array[i*4] = model["velocity_skinning"]["speed_tracker"][i].current_speed.x;
-            self.tbo_linear_velocity_array[i*4 + 1] = model["velocity_skinning"]["speed_tracker"][i].current_speed.y;
-            self.tbo_linear_velocity_array[i*4 + 2] = model["velocity_skinning"]["speed_tracker"][i].current_speed.z;
+            if (model["param"]["disabled_bones"].indexOf(i) === -1) {
+                self.tbo_linear_velocity_array[i*4] = model["velocity_skinning"]["speed_tracker"][i].current_speed.x;
+                self.tbo_linear_velocity_array[i*4 + 1] = model["velocity_skinning"]["speed_tracker"][i].current_speed.y;
+                self.tbo_linear_velocity_array[i*4 + 2] = model["velocity_skinning"]["speed_tracker"][i].current_speed.z;
+            }
+            else {
+                self.tbo_linear_velocity_array[i*4] = 0;
+                self.tbo_linear_velocity_array[i*4 + 1] = 0;
+                self.tbo_linear_velocity_array[i*4 + 2] = 0;
+            }
         }
         self.tbo_linear_velocity.needsUpdate = true;
 
