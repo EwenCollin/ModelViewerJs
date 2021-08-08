@@ -93,6 +93,8 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
         animationSpeed: 1/60,
         animationSpeedMultiplier: 1,
         animationClips: self.animations,
+        weightPaintingMode: false,
+        painting: false,
     }
 
     self.helpers = {
@@ -404,11 +406,21 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
     }
 
     self.select = function(mouse, rendererDomElement, camera) {
-        var objectsToIntersect = self.skeletonMesh.children;
+        if(!self.PARAMS.weightPaintingMode) {
+            var objectsToIntersect = self.skeletonMesh.children;
+            var rayResult = self.raycast(mouse, objectsToIntersect, rendererDomElement, camera);
+            if(rayResult.length > 0) {
+                var selectedObject = rayResult[0].object;
+                self.updateTransformSelection(selectedObject);
+            }
+        }
+    }
+
+    self.paint = function(mouse, rendererDomElement, camera) {
+        var objectsToIntersect = [self.skinnedMesh];
         var rayResult = self.raycast(mouse, objectsToIntersect, rendererDomElement, camera);
         if(rayResult.length > 0) {
-            var selectedObject = rayResult[0].object;
-            self.updateTransformSelection(selectedObject);
+            self.shaderHelper.paint(self.skinnedMesh.worldToLocal(rayResult[0].point));
         }
     }
 
@@ -901,6 +913,14 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
     }
 
     self.onAfterInteraction = function(mouse) {
+        self.PARAMS.painting = false;
+    }
+    self.onStartInteraction = function(mouse) {
+        self.PARAMS.painting = true;
+    }
+
+    self.onMouseMove = function(mouse, rendererDomElement) {
+        if(self.PARAMS.weightPaintingMode && self.PARAMS.painting) self.paint(mouse, rendererDomElement, self.camera)
     }
 
     self.updateScaleUnit = function() {
@@ -967,6 +987,14 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
         }
     }
 
+    self.resetSkeletonPose = function() {
+        for(var j in self.joints) {
+            
+            if(self.joints[j].parentIndex !== -1 && self.joints[j].index !== -1) self.joints[j].matrix.copy(self.initialMatricesInverse[self.joints[j].index].clone().invert().premultiply(self.initialMatricesInverse[self.joints[self.joints[j].parentIndex].index]));
+            else if (self.joints[j].index !== -1) self.joints[j].matrix.copy(self.initialMatricesInverse[self.joints[j].index].clone().invert());
+        }
+    }
+
     self.tick = function(boneControls) {
         //self.setSkeletonVisibility(true);
         self.boneControls = boneControls;
@@ -978,6 +1006,9 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
         if(self.PARAMS.playAnimation) {
             //self.animationMixer.update(1/60);
             self.interpolateJointsFromAnimation(self.animations[self.PARAMS.selectedAnimation]);
+        }
+        if(self.PARAMS.weightPaintingMode) {
+            self.resetSkeletonPose();
         }
         self.updateBindedSkeleton();
         self.updateRepr();

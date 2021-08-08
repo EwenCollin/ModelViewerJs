@@ -91,6 +91,17 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
         }
     }
 
+    self.onStartInteraction = function(event) {
+        if(self.selectedObject !== undefined) {
+            self.selectedObject.onStartInteraction(event);
+        }
+    }
+    self.onMouseMove = function(event) {
+        if(self.selectedObject !== undefined) {
+            self.selectedObject.onMouseMove(event, self.rendererDomElement);
+        }
+    }
+
     self.onAfterInteraction = function(mouse) {
         if(self.selectedObject !== undefined) {
             self.selectedObject.onAfterInteraction(mouse);

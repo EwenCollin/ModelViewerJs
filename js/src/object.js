@@ -199,7 +199,20 @@ var Object = function(parent, mesh, filename, index, font, camera, userInterface
 	}
 
 	self.onAfterInteraction = function(mouse) {
-		self.interactiveSkeleton.onAfterInteraction(mouse);
+		for(var is in self.interactiveSkeletons) {
+			self.interactiveSkeletons[is].onAfterInteraction(mouse);
+		}
+	}
+	self.onMouseMove = function(mouse, rendererDomElement) {
+		for(var is in self.interactiveSkeletons) {
+			if(self.interactiveSkeletons[is].isInitialized) self.interactiveSkeletons[is].onMouseMove(mouse, rendererDomElement);
+		}
+	}
+
+	self.onStartInteraction = function(mouse) {
+		for(var is in self.interactiveSkeletons) {
+			self.interactiveSkeletons[is].onStartInteraction(mouse);
+		}
 	}
 
 	self.setPosition = function(position) {

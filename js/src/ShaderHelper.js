@@ -5,6 +5,14 @@ var ShaderHelper = function(data) {
     self.data = data;
     self.maxTextureSize = 8192;
     self.shader;
+    self.vertexColorMaterial;
+    self.diffuseMap;
+    self.vsWeightMap;
+    self.colorStrenght = 35000;
+    self.useVertexWeights = false;
+    self.vertexWeightsDisplay = false;
+    self.brushStrength = 1;
+    self.brushSize = 1;
 
     self.getValidWidth = function(nb) {
         var power = 2;
@@ -22,21 +30,40 @@ var ShaderHelper = function(data) {
         return self.getValidWidth(nb) * self.getValidHeight(nb);
     }
 
+    self.getVSWeightTexture = function() {
+        return self.vsWeightMap;
+    }
+
     self.tick = function() {
         self.generateDynamicUniformsVertex();
         self.data.skinnedMesh.material.uniformsNeedUpdate = true;
     }
 
+    self.setVertexColorMaterial = function(set) {
+        if(set) self.data.skinnedMesh.material = self.vertexColorMaterial;
+        else self.data.skinnedMesh.material = self.shader;
+        self.vertexWeightsDisplay = set;
+    }
+
+    self.setUseVertexWeights = function(set) {
+        self.shader.vertexColors = set;
+        self.shader.needsUpdate = true;
+        self.useVertexWeights = set;
+    }
+
     self.generateShader = function() {
+        self.generateColors();
         self.generateStaticUniformsVertex();
         self.generateDynamicUniformsVertex();
         var shader = new THREE.ShaderMaterial({
+            vertexColors: false,
             depthTest: true,
             skinning: true,
             vertexShader: document.getElementById("vertexShader").textContent,
             fragmentShader: document.getElementById("fragmentShader").textContent,
             uniforms: {
                 map: {value: null},
+                vs_weight_map: {value: null},
                 translation: {value: self.translation},
                 rotation: {value: self.rotation},
                 scaling: {value: self.scaling},
@@ -64,12 +91,44 @@ var ShaderHelper = function(data) {
         });
         if(self.data.skinnedMesh.material.map) {
             console.log(self.data.skinnedMesh.material.map);
-            shader.uniforms["map"].value = self.data.skinnedMesh.material.map;
+            self.diffuseMap = self.data.skinnedMesh.material.map;
+            shader.uniforms["map"].value = self.diffuseMap;
         }
+        self.vsWeightMap = new THREE.Texture(undefined, THREE.UVMapping, THREE.RepeatWrapping, THREE.RepeatWrapping);
+        shader.uniforms["vs_weight_map"].value = self.vsWeightMap;
         shader.glslVersion = THREE.GLSL3;
         self.data.skinnedMesh.material = shader;
         console.log("SHADER HELPER : ", self, shader);
         self.shader = shader;
+        self.vertexColorMaterial = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+			flatShading: true,
+			vertexColors: true,
+			shininess: 0
+        });
+    }
+
+    self.generateColors = function() {
+        var colors = new Float32Array( self.data.geometryAttributes.position.count * 3 );
+        for(var c = 0; c < self.data.geometryAttributes.position.count * 3; c++) {
+            colors[c] = 1;
+        }
+        self.data.skinnedMesh.geometry.setAttribute( 'color', new THREE.BufferAttribute( colors, 3 ));
+    }
+
+    self.paint = function(position) {
+        var tmpVPos = new THREE.Vector3();
+        var tmpColor = new THREE.Color();
+        for(var i = 0; i < self.data.geometryAttributes.position.count; i++) {
+            tmpVPos.fromBufferAttribute(self.data.geometryAttributes.position, i);
+            var dist = tmpVPos.distanceToSquared(position);
+            tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), Math.min(2, Math.max(0, self.data.skinnedMesh.geometry.attributes.color.getZ(i) - Math.min(self.brushStrength/(dist*self.colorStrenght), 1))));
+            tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
+            if(dist < 0.01*self.brushSize) {
+                self.data.skinnedMesh.geometry.attributes.color.setXYZ(i, tmpColor.r, tmpColor.g, tmpColor.b);
+            }
+        }
+        self.data.skinnedMesh.geometry.attributes.color.needsUpdate = true;
     }
 
     self.generateStaticUniformsVertex = function() {

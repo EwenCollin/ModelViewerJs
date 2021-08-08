@@ -60,7 +60,7 @@ function init() {
 
 	controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
 	controls.dampingFactor = 0.05;
-
+	
 	controls.screenSpacePanning = true;
 
 	controls.minDistance = 5;
@@ -79,7 +79,7 @@ function init() {
 
 	loader = new Loader(loadGroup, camera);
 	interaction = new Interaction(loader.getObjects(), renderer.domElement, camera, controls, scene);
-	userInterface = new UserInterface(document.getElementById("settings-panel"), interaction, loader);
+	userInterface = new UserInterface(document.getElementById("settings-panel"), interaction, loader, controls);
 	interaction.setUserInterface(userInterface);
 	loader.setUserInterface(userInterface);
 
@@ -118,6 +118,9 @@ function init() {
 
 
 	window.addEventListener('resize', onWindowResize, false);
+	window.addEventListener('mouseup', onMouseUp, false);
+	window.addEventListener('mousedown', onMouseDown, false);
+	window.addEventListener('mousemove', onMouseMove, false);
 
 	window.addEventListener( 'dragover', onDragOver, false );
 	
@@ -136,6 +139,12 @@ function init() {
 
 function onClick(event) {
 	interaction.select(new THREE.Vector2(event.clientX, event.clientY));
+}
+function onMouseDown(event) {
+	interaction.onStartInteraction(new THREE.Vector2(event.clientX, event.clientY));
+}
+function onMouseMove(event) {
+	interaction.onMouseMove(new THREE.Vector2(event.clientX, event.clientY));
 }
 
 function onMouseUp(event) {

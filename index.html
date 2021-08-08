@@ -406,9 +406,13 @@ void velocity_skinning(in float floppy_weight_vertex, in vec3 p_skinning3d, inou
         // compute current position of center of mass
         mat4 T0 = mat4_from_texture(tbo_sk0, k_joint);
         center_of_mass = vec3(T*T0*vec4(center_of_mass,1.0));
-
+        #ifdef USE_COLOR
+        float floppy_magnitude = 0.2 * floppy_weight_vertex * floppy_power * (1.0 - color.b);
+        float squashy_magnitude = 0.05 * squashy_power * (1.0 - color.b);
+        #else
         float floppy_magnitude = 0.2 * floppy_weight_vertex * floppy_power;
         float squashy_magnitude = 0.05 * squashy_power;
+        #endif
 
         // If there is some rotation
         if( length(angular_velocity)>0.001 ){
@@ -555,6 +559,29 @@ void main()
                         <div id="bone-dropdown" class="dropdown-content">
                         </div>
                     </div>
+                </div>
+            </div>
+            <div class="settings-tab">
+                <div class="tab-title">
+                    Vertex weights
+                </div>
+                <div class="tab-content">
+                    <label class="checkbox-container">Weight painting
+                        <input type="checkbox" id="weight-painting">
+                        <span class="checkmark"></span>
+                    </label>
+                    <label class="checkbox-container">Display vertex weights
+                        <input type="checkbox" id="vertex-weights">
+                        <span class="checkmark"></span>
+                    </label>
+                    <label class="checkbox-container">Use vertex weights
+                        <input type="checkbox" id="use-vertex-weights">
+                        <span class="checkmark"></span>
+                    </label>
+                    <label for="wp-brush-strength">Brush strength - <span id="wp-brush-strength-value">1</span></label>
+                    <input id="wp-brush-strength" class="slider" step="0.01" type="range" value="1" max="10" min="-10">
+                    <label for="wp-brush-size">Brush size - <span id="wp-brush-size-value">1</span></label>
+                    <input id="wp-brush-size" class="slider" step="0.01" type="range" value="1" max="3" min="0">
                 </div>
             </div>
             <div class="settings-tab">

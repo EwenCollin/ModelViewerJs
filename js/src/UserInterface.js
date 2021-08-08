@@ -1,6 +1,6 @@
 import * as THREE from '../../build/three.module.js';
 
-var UserInterface = function(domElement, interaction, loader) {
+var UserInterface = function(domElement, interaction, loader, controls) {
     var self = this;
     self.domElement = domElement;
     self.interaction = interaction;
@@ -9,9 +9,10 @@ var UserInterface = function(domElement, interaction, loader) {
     self.currentObject = null;
     self.currentInteractiveSkeleton = [];
     self.selectedJoint = [];
-
+    self.controls = controls;
+    
     self.dom = {}
-    self.domList = ["progress", "progress-bar1", "progress-message", "background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
+    self.domList = ["wp-brush-strength-value", "wp-brush-strength", "wp-brush-size", "wp-brush-size-value", "vertex-weights", "use-vertex-weights", "weight-painting", "progress", "progress-bar1", "progress-message", "background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
 
     self.init = function() {
         for(var d in self.domList) {
@@ -54,6 +55,23 @@ var UserInterface = function(domElement, interaction, loader) {
                     tabs[tab].classList.add("tab-content-dark");
                 }
             }
+        });
+
+        self.dom["wp-brush-strength"].addEventListener("change", function() {
+            self.setWeightBrushStrength(this.value);
+        });
+        self.dom["wp-brush-size"].addEventListener("change", function() {
+            self.setWeightBrushSize(this.value);
+        });
+
+        self.dom["weight-painting"].addEventListener("change", function() {
+            self.setWeightPainting(this.checked);
+        });
+        self.dom["use-vertex-weights"].addEventListener("change", function() {
+            self.setUseWeightPainting(this.checked);
+        });
+        self.dom["vertex-weights"].addEventListener("change", function() {
+            self.setDisplayVertexWeights(this.checked);
         });
 
         self.dom["vs-flappy-power"].addEventListener("change", function() {
@@ -108,6 +126,35 @@ var UserInterface = function(domElement, interaction, loader) {
         });
     }
 
+    self.setWeightPainting = function(active) {
+        for(var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].PARAMS.weightPaintingMode = active;
+            self.controls.enablePan = !active;
+        }
+    }
+    self.setUseWeightPainting = function(active) {
+        for(var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].shaderHelper.setUseVertexWeights(active);
+        }
+    }
+    self.setWeightBrushStrength = function(value) {
+        self.dom["wp-brush-strength-value"].innerText = value;
+        for(var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].shaderHelper.brushStrength = value;
+        }
+    }
+    self.setWeightBrushSize = function(value) {
+        self.dom["wp-brush-size-value"].innerText = value;
+        for(var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].shaderHelper.brushSize = value;
+        }
+    }
+    self.setDisplayVertexWeights = function(active) {
+        for(var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].shaderHelper.setVertexColorMaterial(active);
+        }
+    }
+
     self.addBarInfo = function(message, progress) {
         self.dom["progress"].classList.remove("hidden");
         if(message != null) self.dom["progress-message"].innerText = message;
@@ -140,6 +187,13 @@ var UserInterface = function(domElement, interaction, loader) {
         self.dom["vs-alpha"].value = self.currentInteractiveSkeleton[0].PARAMS.alpha;
         self.dom["vs-alpha-value"].innerText = self.currentInteractiveSkeleton[0].PARAMS.alpha;
         self.dom["anim-speed-multiplier"].value = self.currentInteractiveSkeleton[0].PARAMS.animationSpeedMultiplier;
+        self.dom["weight-painting"].checked = self.currentInteractiveSkeleton[0].PARAMS.weightPaintingMode;
+        self.dom["vertex-weights"].checked = self.currentInteractiveSkeleton[0].shaderHelper.vertexWeightsDisplay;
+        self.dom["use-vertex-weights"].checked = self.currentInteractiveSkeleton[0].shaderHelper.useVertexWeights;
+        self.dom["wp-brush-size-value"].innerText = self.currentInteractiveSkeleton[0].shaderHelper.brushSize;
+        self.dom["wp-brush-size"].value = self.currentInteractiveSkeleton[0].shaderHelper.brushSize;
+        self.dom["wp-brush-strength-value"].innerText = self.currentInteractiveSkeleton[0].shaderHelper.brushStrength;
+        self.dom["wp-brush-strength"].value = self.currentInteractiveSkeleton[0].shaderHelper.brushStrength;
         if(self.interaction.boneControls.space === "local") {
             self.dom["skeleton-transform-local"].checked = true;
         } else {
