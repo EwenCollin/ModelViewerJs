@@ -1,7 +1,7 @@
 import * as THREE from '../../build/three.module.js';
 import { InteractiveSkeleton } from './InteractiveSkeleton.js';
 
-var Object = function(parent, mesh, filename, index, font, camera) {
+var Object = function(parent, mesh, filename, index, font, camera, userInterface) {
     var self = this;
     self.parent = parent;
     self.mesh = mesh;
@@ -19,6 +19,8 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 	self.interactiveSkeletons = [];
 	self.group;
 	self.globalBoneArray;
+	self.userInterface = userInterface;
+	self.isInitialized = false;
 
 	self.getTransformGroup = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
@@ -129,11 +131,11 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 					child.updateMatrix();
 					child.updateMatrixWorld();
 					console.log(child);
-					
+					child.skeleton.pose();
 					var rootJoint = getRoot(child.skeleton.bones[0]);
 					var rootJointIndex = rootBonesUUID.indexOf(rootJoint.uuid);
 					if(rootJointIndex !== -1) {
-						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera));
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera, self.userInterface));
 					} else {
 						jointArray = [rootJoint];
 						indexJointRecursive(rootJoint);
@@ -142,7 +144,7 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 						}
 						bonesArray.push(jointArray);
 						rootBonesUUID.push(rootJoint.uuid);
-						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera));
+						self.interactiveSkeletons.push(new InteractiveSkeleton(child, {rootJoint: rootJoint, bones: child.skeleton.bones, global: jointArray}, object, self.animations, self.camera, self.userInterface));
 
 					}
 
@@ -175,11 +177,13 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		self.group = object;
 		self.globalBoneArray = bonesArray;
 		console.log(self);
+		self.isInitialized = true;
     }
 
     self.tick = function(dt, boneControls) {
 		for(var skeleton in self.interactiveSkeletons) {
-			self.interactiveSkeletons[skeleton].tick(boneControls);
+			if(self.interactiveSkeletons[skeleton].isInitialized) self.interactiveSkeletons[skeleton].tick(boneControls);
+			else self.interactiveSkeletons[skeleton].init();
 		}
 		if (self.animationMixer) self.animationMixer.update(dt);
 		self.text.rotation.copy(camera.rotation);
@@ -248,7 +252,6 @@ var Object = function(parent, mesh, filename, index, font, camera) {
 		);
 		return new THREE.BufferGeometry().fromGeometry(geometry);
 	}
-    self.init();
 
 }
 

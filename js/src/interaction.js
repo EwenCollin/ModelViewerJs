@@ -28,7 +28,8 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.tick = function(dt) {
         for(var i = 0; i < self.objects.length; i++) {
             self.objects[i].selected = false;
-            self.objects[i].tick(dt, self.boneControls);
+            if(self.objects[i].isInitialized) self.objects[i].tick(dt, self.boneControls);
+            else self.objects[i].init();
         }
         if(self.selectedObject !== undefined) {
             self.selectedObject.selected = true;

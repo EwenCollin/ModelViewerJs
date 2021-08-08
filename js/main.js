@@ -81,6 +81,7 @@ function init() {
 	interaction = new Interaction(loader.getObjects(), renderer.domElement, camera, controls, scene);
 	userInterface = new UserInterface(document.getElementById("settings-panel"), interaction, loader);
 	interaction.setUserInterface(userInterface);
+	loader.setUserInterface(userInterface);
 
 	//LIGHTS
 	const light = new THREE.DirectionalLight(0xffffff, 1.3, 100);
@@ -144,9 +145,7 @@ function onMouseUp(event) {
 function onDrop(event) {
 	console.log(event);
 	event.preventDefault();
-	
-	document.getElementById("progress-bar1").style.width = 0;
-	document.getElementById("progress").classList.remove("hidden");
+	userInterface.addBarInfo("Reading file data", 0);
 	var totalFilesRead = 0;
 	var files = event.dataTransfer.files;
 	loader.addObjectsNbTotal(files.length);
@@ -156,7 +155,7 @@ function onDrop(event) {
 			reader.onload = function(event) {
 				loader.addFromUrl(event.target.result, file.name);
 				totalFilesRead++;
-				document.getElementById("progress-bar1").style.width = (totalFilesRead / files.length) * 100 + "%";
+				userInterface.addBarInfo("Reading file data", 100);
 			}
 			reader.readAsDataURL(file);
 		}

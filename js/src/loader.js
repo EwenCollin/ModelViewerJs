@@ -16,6 +16,7 @@ var Loader = function(parentGroup, camera) {
     self.loadedItems = 0;
     self.camera = camera;
     self.font;
+    self.userInterface;
 
     self.init = function() {
         var loaderJSONFont = new THREE.FontLoader();
@@ -69,13 +70,13 @@ var Loader = function(parentGroup, camera) {
     self.addFromUrl = function(url, filename) {
         if (filename.endsWith(".fbx")) {
             self.loaderFBX.load(url, function(object) {
-                self.objects.push(new Object(self.parentGroup, object, filename, self.objects.length, self.font, self.camera));
+                self.objects.push(new Object(self.parentGroup, object, filename, self.objects.length, self.font, self.camera, self.userInterface));
                 self.loadedItems++;
             });
         }
         else if (filename.endsWith(".gltf") || filename.endsWith(".glb")) {
             self.loaderGLTF.load(url, function(object) {
-                self.objects.push(new Object(self.parentGroup, object, filename, self.objects.length, self.font, self.camera));
+                self.objects.push(new Object(self.parentGroup, object, filename, self.objects.length, self.font, self.camera, self.userInterface));
                 self.loadedItems++;
             });
         }
@@ -85,6 +86,10 @@ var Loader = function(parentGroup, camera) {
 
     self.getObjects = function() {
         return self.objects;
+    }
+
+    self.setUserInterface = function(userInterface) {
+        self.userInterface = userInterface;
     }
 }
 

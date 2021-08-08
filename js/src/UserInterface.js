@@ -11,7 +11,7 @@ var UserInterface = function(domElement, interaction, loader) {
     self.selectedJoint = [];
 
     self.dom = {}
-    self.domList = ["background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
+    self.domList = ["progress", "progress-bar1", "progress-message", "background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
 
     self.init = function() {
         for(var d in self.domList) {
@@ -106,6 +106,17 @@ var UserInterface = function(domElement, interaction, loader) {
         self.dom["bone-vs-disable-all"].addEventListener("click", function() {
             self.toggleJoint(null, null, false);
         });
+    }
+
+    self.addBarInfo = function(message, progress) {
+        console.log(message, progress);
+        self.dom["progress"].classList.remove("hidden");
+        if(message != null) self.dom["progress-message"].innerText = message;
+        if(progress != null) self.dom["progress-bar1"].style.width = progress + "%";
+    }
+
+    self.hideBar = function() {
+        self.dom["progress"].classList.add("hidden");
     }
 
     self.setCurrentObject = function(object) {
