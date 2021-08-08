@@ -406,3 +406,22 @@ input[type=color] {
   max-width: 225px;
   overflow-x: hidden;
 }
+
+/* Links inside the dropdown */
+.dropdown-content .animation-item {
+  color: black;
+  padding: 6px;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content .animation-item:hover {background-color: #ddd}
+
+/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+.show-animation-item {display:block;}
+
+.bone-disabled{
+  background:rgba(0, 0, 0, 0.5);
+}
