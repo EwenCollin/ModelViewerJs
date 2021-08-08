@@ -609,7 +609,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
                 model["velocity_skinning"]["reverse_vertex_depending_on_joint"].push([]);
                 model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"].push([]);
                 for(var Kvertex = 0; Kvertex < self.initialPositions.count; Kvertex++) {
-                    self.userInterface.addBarInfo("Computing reverse cumulated velocity skinning weights", 100*(Kvertex*Kj/(self.initialPositions.count*self.skeleton.bones.length)));
+                    
                     var jointIndex = new THREE.Vector4().fromBufferAttribute(self.geometryAttributes.skinIndex, Kvertex);
                     var jointWeight = new THREE.Vector4().fromBufferAttribute(self.geometryAttributes.skinWeight, Kvertex);
                     for(var Kdependency = 0; Kdependency < 4; Kdependency++) {
@@ -771,7 +771,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
             }
 
             var alpha = self.PARAMS.alpha;
-            model["velocity_skinning"]["speed_tracker"][b].current_speed.setFromMatrixPosition(self.joints[j].matrix).sub(model["skeleton_current"]["position_local"][b]).divideScalar(self.PARAMS.animationSpeed*self.PARAMS.animationSpeedMultiplier).multiplyScalar(1-alpha);
+            model["velocity_skinning"]["speed_tracker"][b].current_speed.setFromMatrixPosition(self.joints[j].matrix).sub(model["skeleton_current"]["position_local"][b]).divideScalar(self.PARAMS.animationSpeed).multiplyScalar(1-alpha);
             model["velocity_skinning"]["speed_tracker"][b].avg_speed.multiplyScalar(alpha).add(model["velocity_skinning"]["speed_tracker"][b].current_speed);
 
             var q0 = model["velocity_skinning"]["rotation_tracker"][b].last_position.clone();
@@ -784,7 +784,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
 
             const new_rotation_speed_vec = new THREE.Vector3();
             quaternion_to_angular_speed(new_rotation_speed, new_rotation_speed_vec);
-            new_rotation_speed_vec.multiplyScalar(1-alpha).divideScalar(self.PARAMS.animationSpeed*self.PARAMS.animationSpeedMultiplier);
+            new_rotation_speed_vec.multiplyScalar(1-alpha).divideScalar(self.PARAMS.animationSpeed);
             
 
             model["velocity_skinning"]["rotation_tracker"][b].avg_speed.multiplyScalar(alpha);

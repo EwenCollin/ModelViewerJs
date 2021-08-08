@@ -109,7 +109,6 @@ var UserInterface = function(domElement, interaction, loader) {
     }
 
     self.addBarInfo = function(message, progress) {
-        console.log(message, progress);
         self.dom["progress"].classList.remove("hidden");
         if(message != null) self.dom["progress-message"].innerText = message;
         if(progress != null) self.dom["progress-bar1"].style.width = progress + "%";
