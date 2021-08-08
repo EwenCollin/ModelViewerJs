@@ -131,7 +131,6 @@ var Object = function(parent, mesh, filename, index, font, camera, userInterface
 					child.updateMatrix();
 					child.updateMatrixWorld();
 					console.log(child);
-					child.skeleton.pose();
 					var rootJoint = getRoot(child.skeleton.bones[0]);
 					var rootJointIndex = rootBonesUUID.indexOf(rootJoint.uuid);
 					if(rootJointIndex !== -1) {
