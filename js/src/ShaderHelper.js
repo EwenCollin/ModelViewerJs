@@ -8,7 +8,7 @@ var ShaderHelper = function(data) {
     self.vertexColorMaterial;
     self.diffuseMap;
     self.vsWeightMap;
-    self.colorStrenght = 5000;
+    self.colorStrength = 50;
     self.useVertexWeights = false;
     self.vertexWeightsDisplay = false;
     self.brushStrength = 1;
@@ -122,12 +122,14 @@ var ShaderHelper = function(data) {
         else {
             var tmpVPos = new THREE.Vector3();
             var tmpColor = new THREE.Color();
+            var posWorld = self.data.skinnedMesh.localToWorld(position.clone());
             for(var i = 0; i < self.data.geometryAttributes.position.count; i++) {
                 tmpVPos.fromBufferAttribute(self.data.geometryAttributes.position, i);
-                var dist = tmpVPos.distanceToSquared(position);
-                tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), Math.min(2, Math.max(0, self.data.skinnedMesh.geometry.attributes.color.getZ(i) - Math.min(self.brushStrength/(dist*self.colorStrenght), 1))));
+                var dist = self.data.skinnedMesh.localToWorld(tmpVPos).distanceToSquared(posWorld)/1000;
+                console.log("Distance: ",dist);
+                tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), Math.min(2, Math.max(0, self.data.skinnedMesh.geometry.attributes.color.getZ(i) - Math.min(self.brushStrength/(dist*self.colorStrength), 1))));
                 tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
-                if(dist < 0.01*self.brushSize) {
+                if(dist < self.brushSize) {
                     self.data.skinnedMesh.geometry.attributes.color.setXYZ(i, tmpColor.r, tmpColor.g, tmpColor.b);
                 }
             }
@@ -164,12 +166,13 @@ var ShaderHelper = function(data) {
 
         var tmpVPos = new THREE.Vector3();
         var tmpColor = new THREE.Color();
+        var posWorld = self.data.skinnedMesh.localToWorld(position.clone());
         for(var i = 0; i < self.data.geometryAttributes.position.count; i++) {
             tmpVPos.fromBufferAttribute(self.data.geometryAttributes.position, i);
-            var dist = tmpVPos.distanceToSquared(position);
+            var dist = self.data.skinnedMesh.localToWorld(tmpVPos).distanceToSquared(posWorld)/1000;
             tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), self.data.skinnedMesh.geometry.attributes.color.getZ(i));
             tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
-            if(dist < 0.01*self.brushSize) {
+            if(dist < 0.005*self.brushSize) {
                 array.push(tmpColor.b - 1);
                 indices.push(i);
             }
