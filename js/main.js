@@ -141,14 +141,14 @@ function onClick(event) {
 	interaction.select(new THREE.Vector2(event.clientX, event.clientY));
 }
 function onMouseDown(event) {
-	interaction.onStartInteraction(new THREE.Vector2(event.clientX, event.clientY));
+	if(event.which == 1) interaction.onStartInteraction(new THREE.Vector2(event.clientX, event.clientY));
 }
 function onMouseMove(event) {
 	interaction.onMouseMove(new THREE.Vector2(event.clientX, event.clientY));
 }
 
 function onMouseUp(event) {
-	interaction.onAfterInteraction(new THREE.Vector2(event.clientX, event.clientY));
+	if(event.which == 1) interaction.onAfterInteraction(new THREE.Vector2(event.clientX, event.clientY));
 }
 
 function onDrop(event) {
