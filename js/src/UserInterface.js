@@ -32,7 +32,7 @@ var UserInterface = function(domElement, interaction, loader, controls) {
             });
         }
 
-        self.dom["background-color"].addEventListener("change", function() {
+        self.dom["background-color"].addEventListener("input", function() {
             function hexToRgb(hex) {
                 var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
                 return result ? {
@@ -57,14 +57,14 @@ var UserInterface = function(domElement, interaction, loader, controls) {
             }
         });
 
-        self.dom["wp-smoothing"].addEventListener("change", function() {
+        self.dom["wp-smoothing"].addEventListener("input", function() {
             self.setWeightSmoothing(this.value);
         });
 
-        self.dom["wp-brush-strength"].addEventListener("change", function() {
+        self.dom["wp-brush-strength"].addEventListener("input", function() {
             self.setWeightBrushStrength(this.value);
         });
-        self.dom["wp-brush-size"].addEventListener("change", function() {
+        self.dom["wp-brush-size"].addEventListener("input", function() {
             self.setWeightBrushSize(this.value);
         });
 
@@ -78,16 +78,16 @@ var UserInterface = function(domElement, interaction, loader, controls) {
             self.setDisplayVertexWeights(this.checked);
         });
 
-        self.dom["vs-flappy-power"].addEventListener("change", function() {
+        self.dom["vs-flappy-power"].addEventListener("input", function() {
             self.setFlappingPower(self.dom["vs-flappy-power"].value);
         });
-        self.dom["vs-squashy-power"].addEventListener("change", function() {
+        self.dom["vs-squashy-power"].addEventListener("input", function() {
             self.setSquashingPower(self.dom["vs-squashy-power"].value);
         });
-        self.dom["vs-global-power"].addEventListener("change", function() {
+        self.dom["vs-global-power"].addEventListener("input", function() {
             self.setGlobalPowerFactor(self.dom["vs-global-power"].value);
         });
-        self.dom["vs-alpha"].addEventListener("change", function() {
+        self.dom["vs-alpha"].addEventListener("input", function() {
             self.setSpeedAlpha(self.dom["vs-alpha"].value);
         });
         self.dom["helper-angular-velocity"].addEventListener("change", function() {
@@ -116,7 +116,7 @@ var UserInterface = function(domElement, interaction, loader, controls) {
         self.dom["animation-open-dropdown"].addEventListener("click", function() {
             self.dom["animation-dropdown"].classList.toggle("show-animation-item");
         });
-        self.dom["anim-speed-multiplier"].addEventListener("change", function() {
+        self.dom["anim-speed-multiplier"].addEventListener("input", function() {
             self.setSpeedMultiplier(self.dom["anim-speed-multiplier"].value);
         });
         self.dom["bone-open-dropdown"].addEventListener("click", function() {
