@@ -578,10 +578,12 @@ void main()
                         <input type="checkbox" id="use-vertex-weights">
                         <span class="checkmark"></span>
                     </label>
-                    <label for="wp-brush-strength">Brush strength - <span id="wp-brush-strength-value">1</span></label>
-                    <input id="wp-brush-strength" class="slider" step="0.01" type="range" value="1" max="10" min="-10">
+                    <label for="wp-brush-strength">Brush value - <span id="wp-brush-strength-value">1</span></label>
+                    <input id="wp-brush-strength" class="slider" step="0.01" type="range" value="1" max="1" min="-1">
                     <label for="wp-brush-size">Brush size - <span id="wp-brush-size-value">1</span></label>
                     <input id="wp-brush-size" class="slider" step="0.01" type="range" value="1" max="3" min="0">
+                    <label for="wp-smoothing">Smoothing - <span id="wp-smoothing-value">0</span></label>
+                    <input id="wp-smoothing" class="slider" step="0.01" type="range" value="0" max="1" min="0">
                 </div>
             </div>
             <div class="settings-tab">

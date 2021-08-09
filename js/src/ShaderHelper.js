@@ -8,11 +8,12 @@ var ShaderHelper = function(data) {
     self.vertexColorMaterial;
     self.diffuseMap;
     self.vsWeightMap;
-    self.colorStrenght = 35000;
+    self.colorStrenght = 5000;
     self.useVertexWeights = false;
     self.vertexWeightsDisplay = false;
     self.brushStrength = 1;
     self.brushSize = 1;
+    self.smoothing = 0;
 
     self.getValidWidth = function(nb) {
         var power = 2;
@@ -117,18 +118,73 @@ var ShaderHelper = function(data) {
     }
 
     self.paint = function(position) {
+        if(self.smoothing > 0) self.paintSmooth(position);
+        else {
+            var tmpVPos = new THREE.Vector3();
+            var tmpColor = new THREE.Color();
+            for(var i = 0; i < self.data.geometryAttributes.position.count; i++) {
+                tmpVPos.fromBufferAttribute(self.data.geometryAttributes.position, i);
+                var dist = tmpVPos.distanceToSquared(position);
+                tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), Math.min(2, Math.max(0, self.data.skinnedMesh.geometry.attributes.color.getZ(i) - Math.min(self.brushStrength/(dist*self.colorStrenght), 1))));
+                tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
+                if(dist < 0.01*self.brushSize) {
+                    self.data.skinnedMesh.geometry.attributes.color.setXYZ(i, tmpColor.r, tmpColor.g, tmpColor.b);
+                }
+            }
+            self.data.skinnedMesh.geometry.attributes.color.needsUpdate = true;
+        }
+    }
+
+    self.paintSmooth = function(position) {
+        var array = [];
+        var indices = [];
+        
+        function average(data) {
+            var sum = data.reduce(function(sum, value) {
+                return sum + value;
+            }, 0);
+            var avg = sum / data.length;
+            return avg;
+        }
+
+        function smooth(values, alpha) {
+            var weighted = average(values) * alpha;
+            var smoothed = [];
+            for (var i in values) {
+                var curr = values[i];
+                var prev = smoothed[i - 1] || values[values.length - 1];
+                var next = curr || values[0];
+                var improved = Number(average([weighted, prev, curr, next]).toFixed(2));
+                smoothed.push(improved);
+            }
+            return smoothed;
+        }
+        
+
+
         var tmpVPos = new THREE.Vector3();
         var tmpColor = new THREE.Color();
         for(var i = 0; i < self.data.geometryAttributes.position.count; i++) {
             tmpVPos.fromBufferAttribute(self.data.geometryAttributes.position, i);
             var dist = tmpVPos.distanceToSquared(position);
-            tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), Math.min(2, Math.max(0, self.data.skinnedMesh.geometry.attributes.color.getZ(i) - Math.min(self.brushStrength/(dist*self.colorStrenght), 1))));
+            tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), self.data.skinnedMesh.geometry.attributes.color.getZ(i));
             tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
             if(dist < 0.01*self.brushSize) {
-                self.data.skinnedMesh.geometry.attributes.color.setXYZ(i, tmpColor.r, tmpColor.g, tmpColor.b);
+                array.push(tmpColor.b - 1);
+                indices.push(i);
             }
         }
+        console.log("ARRAY BEFORE", array);
+        array = smooth(array, 1 - self.smoothing*0.1);
+        console.log("ARRAY AFTER", array);
+        for(var i = 0; i < indices.length; i++) {
+            var j = indices[i];
+            tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(j), self.data.skinnedMesh.geometry.attributes.color.getY(j), array[i] + 1);
+            tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
+            self.data.skinnedMesh.geometry.attributes.color.setXYZ(j, tmpColor.r, tmpColor.g, tmpColor.b);
+        }
         self.data.skinnedMesh.geometry.attributes.color.needsUpdate = true;
+
     }
 
     self.generateStaticUniformsVertex = function() {

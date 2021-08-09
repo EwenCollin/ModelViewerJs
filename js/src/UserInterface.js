@@ -12,7 +12,7 @@ var UserInterface = function(domElement, interaction, loader, controls) {
     self.controls = controls;
     
     self.dom = {}
-    self.domList = ["wp-brush-strength-value", "wp-brush-strength", "wp-brush-size", "wp-brush-size-value", "vertex-weights", "use-vertex-weights", "weight-painting", "progress", "progress-bar1", "progress-message", "background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
+    self.domList = ["wp-smoothing", "wp-smoothing-value", "wp-brush-strength-value", "wp-brush-strength", "wp-brush-size", "wp-brush-size-value", "vertex-weights", "use-vertex-weights", "weight-painting", "progress", "progress-bar1", "progress-message", "background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "skeleton-transform-local", "skeleton-transform-global", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
 
     self.init = function() {
         for(var d in self.domList) {
@@ -55,6 +55,10 @@ var UserInterface = function(domElement, interaction, loader, controls) {
                     tabs[tab].classList.add("tab-content-dark");
                 }
             }
+        });
+
+        self.dom["wp-smoothing"].addEventListener("change", function() {
+            self.setWeightSmoothing(this.value);
         });
 
         self.dom["wp-brush-strength"].addEventListener("change", function() {
@@ -126,6 +130,12 @@ var UserInterface = function(domElement, interaction, loader, controls) {
         });
     }
 
+    self.setWeightSmoothing = function(value) {
+        self.dom["wp-smoothing-value"].innerText = value;
+        for(var isk in self.currentInteractiveSkeleton) {
+            self.currentInteractiveSkeleton[isk].shaderHelper.smoothing = value;
+        }
+    }
     self.setWeightPainting = function(active) {
         for(var isk in self.currentInteractiveSkeleton) {
             self.currentInteractiveSkeleton[isk].PARAMS.weightPaintingMode = active;
@@ -194,6 +204,8 @@ var UserInterface = function(domElement, interaction, loader, controls) {
         self.dom["wp-brush-size"].value = self.currentInteractiveSkeleton[0].shaderHelper.brushSize;
         self.dom["wp-brush-strength-value"].innerText = self.currentInteractiveSkeleton[0].shaderHelper.brushStrength;
         self.dom["wp-brush-strength"].value = self.currentInteractiveSkeleton[0].shaderHelper.brushStrength;
+        self.dom["wp-smoothing-value"].innerText = self.currentInteractiveSkeleton[0].shaderHelper.smoothing;
+        self.dom["wp-smoothing"].value = self.currentInteractiveSkeleton[0].shaderHelper.smoothing;
         if(self.interaction.boneControls.space === "local") {
             self.dom["skeleton-transform-local"].checked = true;
         } else {
