@@ -125,7 +125,7 @@ var ShaderHelper = function(data) {
             var posWorld = self.data.skinnedMesh.localToWorld(position.clone());
             for(var i = 0; i < self.data.geometryAttributes.position.count; i++) {
                 tmpVPos.fromBufferAttribute(self.data.geometryAttributes.position, i);
-                var dist = self.data.skinnedMesh.localToWorld(tmpVPos).distanceToSquared(posWorld)/1000;
+                var dist = self.data.skinnedMesh.localToWorld(tmpVPos).distanceToSquared(posWorld)/200;
                 console.log("Distance: ",dist);
                 tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), Math.min(2, Math.max(0, self.data.skinnedMesh.geometry.attributes.color.getZ(i) - Math.min(self.brushStrength/(dist*self.colorStrength), 1))));
                 tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
@@ -169,7 +169,7 @@ var ShaderHelper = function(data) {
         var posWorld = self.data.skinnedMesh.localToWorld(position.clone());
         for(var i = 0; i < self.data.geometryAttributes.position.count; i++) {
             tmpVPos.fromBufferAttribute(self.data.geometryAttributes.position, i);
-            var dist = self.data.skinnedMesh.localToWorld(tmpVPos).distanceToSquared(posWorld)/1000;
+            var dist = self.data.skinnedMesh.localToWorld(tmpVPos).distanceToSquared(posWorld)/200;
             tmpColor.setRGB(self.data.skinnedMesh.geometry.attributes.color.getX(i), self.data.skinnedMesh.geometry.attributes.color.getY(i), self.data.skinnedMesh.geometry.attributes.color.getZ(i));
             tmpColor.r = Math.min(1, Math.max(2 - tmpColor.b, 0));
             if(dist < 0.005*self.brushSize) {
