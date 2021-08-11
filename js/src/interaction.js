@@ -1,5 +1,5 @@
 import * as THREE from '../../build/three.module.js';
-import { TransformControls } from '../jsm/controls/TransformControls.js';
+import { TransformControls } from '../ext/TransformControls.js';
 
 var Interaction = function(objects, rendererDomElement, camera, controls, scene) {
     var self = this;
@@ -14,6 +14,7 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
     self.boneControls.setMode("rotate");
     self.boneControls.setSpace("local");
     self.boneControls.setSize(0.5);
+    self.boneControls.setSensitivity(0.75);
     self.boneControls.addEventListener('dragging-changed', function (event) {
         self.controls.enabled = !event.value;
     });

@@ -2,8 +2,7 @@ import * as THREE from '../build/three.module.js';
 
 import Stats from "../build/stats.module.js";
 
-import { MapControls } from './jsm/controls/OrbitControls.js';
-import { FBXLoader } from './jsm/loaders/FBXLoader.js';
+import { MapControls } from './ext/OrbitControls.js';
 import { Interaction } from './src/interaction.js';
 import { UserInterface } from './src/UserInterface.js';
 

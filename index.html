@@ -536,14 +536,9 @@ void main()
                         <span class="checkmark"></span>
                     </label>
                     Transform
-                    <label class="radio-container">Local
-                        <input id="skeleton-transform-local" type="radio" checked="checked" name="skeleton-transform">
-                        <span class="radio-checkmark"></span>
-                    </label>
-                    <label class="radio-container">Global
-                        <input id="skeleton-transform-global" type="radio" name="skeleton-transform">
-                        <span class="radio-checkmark"></span>
-                    </label>
+                    <label for="transform-sensitivity">Sensitivity - <span id="transform-sensitivity-value">1</span></label>
+                    <input id="transform-sensitivity" class="slider" step="0.01" type="range" value="0.75" max="1.5" min="0">
+                    
 
                 </div>
             </div>
