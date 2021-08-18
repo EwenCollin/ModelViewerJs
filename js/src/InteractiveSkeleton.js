@@ -507,6 +507,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
             var model = {
                 "velocity_skinning": {
                     "center_of_mass": [],
+                    "initial_center_of_mass": [],
                     "vertex_depending_on_joint": [],
                     "vertex_weight_depending_on_joint": [],
                     "vertex_joint_index": [],
@@ -551,6 +552,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
                 model["skeleton_current"]["rotation_local"].push(new THREE.Quaternion().setFromRotationMatrix(self.joints[self.boneToJointIndices[j]].matrix));
                 model["skeleton_current"]["rotation_global"].push(new THREE.Quaternion().setFromRotationMatrix(self.joints[self.boneToJointIndices[j]].matrixWorld));
                 model["velocity_skinning"]["center_of_mass"].push(new THREE.Vector3());
+                model["velocity_skinning"]["initial_center_of_mass"].push(new THREE.Vector3());
                 model["velocity_skinning"]["matrix_tracker"].push(new THREE.Matrix4());
                 model["velocity_skinning"]["vertex_depending_on_joint"].push([]);
                 model["velocity_skinning"]["vertex_weight_depending_on_joint"].push([]);
@@ -749,6 +751,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
         const N_joint = model["velocity_skinning"]["reverse_vertex_depending_on_joint"].length;
         for (let k_joint = 0; k_joint < N_joint; ++k_joint) {
             model["velocity_skinning"]["center_of_mass"][k_joint].set(0, 0, 0);
+            model["velocity_skinning"]["initial_center_of_mass"][k_joint].set(0, 0, 0);
         }
 
         const com_temp = new THREE.Vector3();
@@ -767,6 +770,7 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
                 com_temp.divideScalar(N_dependency);
 
                 model["velocity_skinning"]["center_of_mass"][k_joint].add(com_temp);
+                model["velocity_skinning"]["initial_center_of_mass"][k_joint].add(com_temp);
             }
         }
         
@@ -920,6 +924,10 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
                 self.helpers["angular_speed"][b].position.setFromMatrixPosition(self.joints[j].matrixWorld);
                 self.helpers["angular_speed"][b].quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), model["velocity_skinning"]["rotation_tracker"][b].current_speed.clone().normalize());
             //}
+            M_parent.multiplyMatrices(self.currentMatrices[b], self.initialMatricesInverse[b]);
+            model["velocity_skinning"]["center_of_mass"][b].copy(model["velocity_skinning"]["initial_center_of_mass"][b]);
+            model["velocity_skinning"]["center_of_mass"][b].applyMatrix4(M_parent);
+
             self.helpers["center_of_mass"][b].position.copy(model["velocity_skinning"]["center_of_mass"][b]);
 
             model["skeleton_current"]["position_global"][b].setFromMatrixPosition(self.joints[j].matrixWorld);
