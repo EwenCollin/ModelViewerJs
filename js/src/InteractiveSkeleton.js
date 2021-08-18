@@ -647,16 +647,98 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
                 if(jointIndex == -1) return false;
                 return true;
             }
-
+            /*
             for(var b = 0; b < self.skeleton.bones.length; b++) {
                 console.log(b);
                 for(var c = 0; c < self.skeleton.bones.length; c++) {
                     if(isDescendant(c, b)) {
-                        model["velocity_skinning"]["reverse_vertex_depending_on_joint"][b].push(...model["joint_vertices"]["vertices"][c]);
-                        model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][b].push(...model["joint_vertices"]["weights"][c]);
+                        for(var vertex = 0; vertex < model["joint_vertices"]["vertices"][c].length; vertex++) {
+                            var vertexIndex = model["velocity_skinning"]["reverse_vertex_depending_on_joint"][b].indexOf(model["joint_vertices"]["vertices"][c][vertex]);
+                            if(vertexIndex != -1) {
+                                model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][b][vertexIndex] += model["joint_vertices"]["weights"][c][vertex];
+                            }
+                            else {
+                                model["velocity_skinning"]["reverse_vertex_depending_on_joint"][b].push(model["joint_vertices"]["vertices"][c][vertex]);
+                                model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][b].push(model["joint_vertices"]["weights"][c][vertex]);
+                            }
+                        }
+                        //model["velocity_skinning"]["reverse_vertex_depending_on_joint"][b].push(...model["joint_vertices"]["vertices"][c]);
+                        //model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][b].push(...model["joint_vertices"]["weights"][c]);
+                    }
+                }
+            }*/
+
+            var copyDirect = function(index) {
+                model["velocity_skinning"]["reverse_vertex_depending_on_joint"][index].push(...model["joint_vertices"]["vertices"][index]);
+                model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][index].push(...model["joint_vertices"]["weights"][index]);
+            }
+
+            var copyFromChild = function(parent, child) {
+                model["velocity_skinning"]["reverse_vertex_depending_on_joint"][parent].push(...model["joint_vertices"]["vertices"][child]);
+                model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][parent].push(...model["joint_vertices"]["weights"][child]);
+            }
+
+            var copySafe = function(index) {
+                for(var vertex = 0; vertex < model["joint_vertices"]["vertices"][index].length; vertex++) {
+                    var vertexIndex = model["velocity_skinning"]["reverse_vertex_depending_on_joint"][index].indexOf(model["joint_vertices"]["vertices"][index][vertex]);
+                    if(vertexIndex != -1) {
+                        model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][index][vertexIndex] += model["joint_vertices"]["weights"][index][vertex];
+                    }
+                    else {
+                        model["velocity_skinning"]["reverse_vertex_depending_on_joint"][index].push(model["joint_vertices"]["vertices"][index][vertex]);
+                        model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][index].push(model["joint_vertices"]["weights"][index][vertex]);
                     }
                 }
             }
+
+            var copySafeFromChild = function(parent, child) {
+                for(var vertex = 0; vertex < model["joint_vertices"]["vertices"][child].length; vertex++) {
+                    var vertexIndex = model["velocity_skinning"]["reverse_vertex_depending_on_joint"][parent].indexOf(model["joint_vertices"]["vertices"][child][vertex]);
+                    if(vertexIndex != -1) {
+                        model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][parent][vertexIndex] += model["joint_vertices"]["weights"][child][vertex];
+                    }
+                    else {
+                        model["velocity_skinning"]["reverse_vertex_depending_on_joint"][parent].push(model["joint_vertices"]["vertices"][child][vertex]);
+                        model["velocity_skinning"]["reverse_vertex_weight_depending_on_joint"][parent].push(model["joint_vertices"]["weights"][child][vertex]);
+                    }
+                }
+            }
+
+            var childNumber = function(index) {
+                return self.skeleton.bones[index].children.length;
+            }
+
+            var retrieveIndex = function(bone) {
+                var skeleton = self.skeleton;
+                for(var b = 0; b < skeleton.bones.length; b++) {
+                    if(skeleton.bones[b].uuid === bone.uuid) return b;
+                }
+                return -1;
+            }
+
+            var lastIndex = self.skeleton.bones.length - 1;
+            copyDirect(lastIndex);
+
+            var parentIndex = lastIndex - 1;
+            while(parentIndex != -1) {
+                if(isDescendant(lastIndex, parentIndex)) {
+                    if(childNumber(parentIndex) == 1) {
+                        copyFromChild(parentIndex, lastIndex);
+                        copySafe(parentIndex);
+                    } else {
+                        for (var child = 0; child < self.skeleton.bones[parentIndex].children.length; child++) {
+                            var childIndex = retrieveIndex(self.skeleton.bones[parentIndex].children[child]);
+                            copyDirect(parentIndex);
+                            copySafeFromChild(parentIndex, childIndex);
+                        }
+                    }
+                } else {
+                    copyDirect(parentIndex);
+                }
+                lastIndex--;
+                parentIndex--;
+            }
+
             self.initData["reverse_skinning_weights"] = self.skeleton.bones.length;
             console.log(model);
 
