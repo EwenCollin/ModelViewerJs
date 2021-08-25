@@ -351,6 +351,9 @@ var InteractiveSkeleton = function(skinnedMesh, skeleton, rootGroup, animations,
             //self.skeletonMesh.attach(self.angular_velocity_helper);
             //console.log(self.boneToJointIndices);
             self.computeVSFactor();
+            self.setHelperVisibility("center_of_mass", false);
+            self.setHelperVisibility("angular_speed", false);
+            self.setSkeletonVisibility(true);
             self.userInterface.hideBar();
             self.isInitialized = true;
             return true;

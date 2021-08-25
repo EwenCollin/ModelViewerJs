@@ -10,9 +10,11 @@ var UserInterface = function(domElement, interaction, loader, controls) {
     self.currentInteractiveSkeleton = [];
     self.selectedJoint = [];
     self.controls = controls;
+
+    self.loadConfirmObject = null;
     
     self.dom = {}
-    self.domList = ["transform-sensitivity", "transform-sensitivity-value", "wp-smoothing", "wp-smoothing-value", "wp-brush-strength-value", "wp-brush-strength", "wp-brush-size", "wp-brush-size-value", "vertex-weights", "use-vertex-weights", "weight-painting", "progress", "progress-bar1", "progress-message", "background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
+    self.domList = ["complex-skinned-mesh", "complex-object-prompt", "complex-object-load", "complex-object-cancel", "transform-sensitivity", "transform-sensitivity-value", "wp-smoothing", "wp-smoothing-value", "wp-brush-strength-value", "wp-brush-strength", "wp-brush-size", "wp-brush-size-value", "vertex-weights", "use-vertex-weights", "weight-painting", "progress", "progress-bar1", "progress-message", "background-color", "vs-flappy-power", "vs-squashy-power", "vs-alpha", "current-skeleton-display", "helper-angular-velocity", "helper-centroid", "scene-empty", "vs-squashy-power-value", "vs-flappy-power-value", "vs-alpha-value", "animation-dropdown", "animation-open-dropdown", "anim-speed-multiplier", "anim-speed-multiplier-value", "bone-vs-enable-all", "bone-vs-disable-all", "bone-vs-enabled", "bone-open-dropdown", "bone-dropdown", "vs-global-power", "vs-global-power-value"];
 
     self.init = function() {
         for(var d in self.domList) {
@@ -55,6 +57,13 @@ var UserInterface = function(domElement, interaction, loader, controls) {
                     tabs[tab].classList.add("tab-content-dark");
                 }
             }
+        });
+
+        self.dom["complex-object-cancel"].addEventListener("click", function() {
+            self.setLoadComplexObject(false);
+        });
+        self.dom["complex-object-load"].addEventListener("click", function() {
+            self.setLoadComplexObject(true);
         });
 
         self.dom["transform-sensitivity"].addEventListener("input", function() {
@@ -126,6 +135,21 @@ var UserInterface = function(domElement, interaction, loader, controls) {
         self.dom["bone-vs-disable-all"].addEventListener("click", function() {
             self.toggleJoint(null, null, false);
         });
+    }
+
+    self.setLoadComplexObject = function(load) {
+        self.dom["complex-object-prompt"].classList.add("hidden");
+        if(load && self.loadConfirmObject != null) {
+            self.loadConfirmObject.init(true);
+        } else {
+            self.interaction.deleteObject(self.loadConfirmObject);
+        }
+    }
+
+    self.promptConfirmLoading = function(skinnedMeshName, object) {
+        self.dom["complex-skinned-mesh"].innerText = skinnedMeshName;
+        self.dom["complex-object-prompt"].classList.remove("hidden");
+        self.loadConfirmObject = object;
     }
 
     self.setTransformSensitivity = function(value) {

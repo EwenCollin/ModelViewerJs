@@ -48,6 +48,55 @@ body {
   display: none;
 }
 
+#complex-object-prompt{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  min-width: 500px;
+  box-shadow: 0px 0px 5px 5px rgba(0, 0, 0, 0.25);
+  background-color: rgba(255, 255, 255, 1);
+  color: black;
+  font-size: 30px;
+  padding: 20px;
+  border-radius: 15px;
+}
+
+#complex-skinned-mesh{
+  text-decoration: underline;
+  text-decoration-color: blue;
+}
+
+
+.prompt-button {
+  margin: 2px;
+  border: 2px solid rgb(232, 232, 232);
+  background: rgb(232, 232, 232);
+  color: #2196F3;
+  transition: 0.3s;
+  border-radius: 3px;
+  padding: 5px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.prompt-button:hover{
+  transition: 0.3s;
+  border-color: black;
+}
+.prompt-button:active{
+  transition: 0.1s;
+  border-color: white;
+}
+
+.prompt-deny{
+  color:rgb(190, 36, 36);
+}
+
+.prompt-allow{
+  color:rgb(46, 153, 42);
+}
+
 #progress {
   position: absolute;
   top: 50%;

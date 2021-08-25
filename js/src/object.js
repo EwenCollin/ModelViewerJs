@@ -21,6 +21,7 @@ var Object = function(parent, mesh, filename, index, font, camera, userInterface
 	self.globalBoneArray;
 	self.userInterface = userInterface;
 	self.isInitialized = false;
+	self.isLoadBlocked = false;
 
 	self.getTransformGroup = function() {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
@@ -41,9 +42,24 @@ var Object = function(parent, mesh, filename, index, font, camera, userInterface
 		} ));
 	}
 
-    self.init = function() {
+    self.init = function(force) {
         if (self.filename.endsWith(".gltf") || self.filename.endsWith(".glb")) var object = self.mesh.scene;
         else var object = self.mesh;
+
+
+		if(!force) {
+			var skinnedMeshCount = 0;
+			object.traverse(function (child) {
+				if(child.isMesh && child.skeleton) {
+					skinnedMeshCount++;
+				}
+			});
+			if(skinnedMeshCount < 1 || skinnedMeshCount > 2) {
+				self.userInterface.promptConfirmLoading(self.filename, self);
+				self.isLoadBlocked = true;
+				return;
+			}
+		}
 		var objectsToRemove = [];
 		object.traverse( function ( child ) {
 			if ( child.isMesh ) {
@@ -195,7 +211,7 @@ var Object = function(parent, mesh, filename, index, font, camera, userInterface
 		}
 	}
 	self.delete = function() {
-		self.parent.remove(self.group);
+		if(self.isInitialized) self.parent.remove(self.group);
 	}
 
 	self.onAfterInteraction = function(mouse) {

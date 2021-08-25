@@ -30,7 +30,7 @@ var Interaction = function(objects, rendererDomElement, camera, controls, scene)
         for(var i = 0; i < self.objects.length; i++) {
             self.objects[i].selected = false;
             if(self.objects[i].isInitialized) self.objects[i].tick(dt, self.boneControls);
-            else self.objects[i].init();
+            else if(!self.objects[i].isLoadBlocked) self.objects[i].init(false);
         }
         if(self.selectedObject !== undefined) {
             self.selectedObject.selected = true;
